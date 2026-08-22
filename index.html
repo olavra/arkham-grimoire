@@ -5,10 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arkham Grimoire</title>
 <meta name="description" content="Browse the complete Arkham Horror: The Card Game collection, powered by the ArkhamDB API.">
+<link rel="icon" href="img/ico.svg" type="image/svg+xml">
+<link rel="mask-icon" href="img/ico.svg" color="#6366f1">
+<meta name="theme-color" content="#0a0e1a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/arkham-icons.css">
 </head>
 <body>
 
@@ -22,6 +26,10 @@
   </a>
 
   <div class="topbar-tools">
+    <button type="button" class="btn-ghost toggle-replaced" id="toggle-replaced" hidden
+            aria-pressed="true" title="Deluxe boxes and Mythos Packs the Investigator / Campaign Expansions replaced">
+      <span class="tt-label">Superseded</span><span class="tt-n"></span>
+    </button>
     <label class="search" id="search-wrap" hidden>
       <span class="search-ico" aria-hidden="true">⌕</span>
       <input type="search" id="search" placeholder="Filter cards…" autocomplete="off" spellcheck="false" aria-label="Filter cards">
@@ -41,6 +49,7 @@
 </footer>
 
 <script src="js/api.js"></script>
+<script src="js/packcovers.js"></script>
 <script src="js/markup.js"></script>
 <script src="js/cardback.js"></script>
 <script src="js/viewer.js"></script>

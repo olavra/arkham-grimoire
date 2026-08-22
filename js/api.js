@@ -9,6 +9,7 @@
      sessionStorage quota, so everything stays on the heap for the tab. */
   var cache = {
     packs: null,
+    cycles: undefined,          // position -> cycle name; null once /cycles/ has failed
     cards: Object.create(null), // pack_code -> card[]   ('_all' for the full pool)
     byCode: Object.create(null) // card code -> card
   };
@@ -38,8 +39,26 @@
     return cards;
   }
 
-  /* Packs, newest cycle last. The /cycles/ endpoint currently 500s, so cycle
-     grouping is derived from the pack list itself. */
+  /* Cycle names, keyed by cycle position. This endpoint has been answering 500
+     for a while and packs only carry a cycle_position, never a cycle name, so
+     the caller keeps a static table to fall back on. A failure resolves to null
+     instead of rejecting — a missing heading must not take the pack list down. */
+  function getCycles() {
+    if (cache.cycles !== undefined) return Promise.resolve(cache.cycles);
+    return getJSON(BASE + '/cycles/').then(function (cycles) {
+      var byPosition = Object.create(null);
+      cycles.forEach(function (c) {
+        if (c && c.position !== undefined && c.name) byPosition[c.position] = c.name;
+      });
+      cache.cycles = byPosition;
+      return byPosition;
+    }).catch(function () {
+      cache.cycles = null;
+      return null;
+    });
+  }
+
+  /* Packs, newest cycle last. */
   function getPacks() {
     if (cache.packs) return Promise.resolve(cache.packs);
     return getJSON(BASE + '/packs/').then(function (packs) {
@@ -84,6 +103,7 @@
 
   global.API = {
     getPacks: getPacks,
+    getCycles: getCycles,
     getCards: getCards,
     getCard: getCard,
     imageUrl: imageUrl,

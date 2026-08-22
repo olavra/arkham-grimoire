@@ -20,15 +20,49 @@ Then visit <http://127.0.0.1:8777/>.
 ## Structure
 
 ```
-index.html        app shell — top bar, breadcrumb, view container
-css/style.css     Lustro-derived design system (tokens, glass surfaces, grids)
-js/api.js         ArkhamDB client + in-memory cache
-js/markup.js      renders [action]/[willpower]/… tokens and FFG's HTML subset
-js/cardback.js    picks the printed card back for cards with no defined reverse
-img/              player.png / encounter.png — the two generic card backs
-js/viewer.js      3D card preview overlay
-js/app.js         hash router and the three views
+index.html            app shell — top bar, breadcrumb, view container
+css/style.css         Lustro-derived design system (tokens, glass surfaces, grids)
+css/arkham-icons.css  @font-face + the .icon-* / .color-* classes
+js/api.js             ArkhamDB client + in-memory cache
+js/markup.js          renders [action]/[willpower]/… tokens and FFG's HTML subset
+js/cardback.js        picks the printed card back for cards with no defined reverse
+js/viewer.js          3D card preview overlay
+js/app.js             hash router and the three views
+fonts/                arkham-icons.{woff,ttf,otf}
+img/                  player.png / encounter.png — the two generic card backs
+img/icons/            every icon glyph as a standalone SVG
+img/factions/         ArkhamDB's 16px class plates (reference)
+docs/icons.md         the icon index
+docs/regen-icons.py   re-pulls the icon assets from ArkhamDB
 ```
+
+## Filtering a pack
+
+Above the grid sit two rows of toggles, **Type** and **Faction**. They are built from the
+cards the open pack actually contains, so a campaign expansion never offers an
+`investigator` toggle it can't fill, and each one carries its share of the pack.
+
+- Toggles combine as **OR within a row, AND across rows**: `Asset` + `Event` + `Guardian`
+  means "guardian assets and guardian events".
+- **Nothing selected in a row means that row filters nothing** — all types, all factions.
+- The text box ANDs on top of both rows.
+- **Clear filters** appears once anything is on. The counts on each toggle are for the
+  whole pack, not the current selection, so they stay put while you click around.
+
+Selections are remembered per pack, so opening a card and coming back leaves the grid as
+you left it. They are deliberately not in the URL — a shared link points at a pack, not at
+someone else's filter state.
+
+### Going back to a grid
+
+Returning to a list restores the exact scroll position, in one jump. Two things have to
+hold for that, and both are easy to undo by accident:
+
+- A rebuilt grid only holds the first batch of 60, so the document is much shorter than it
+  was. The batch count is stored alongside the scroll offset and replayed first — without
+  that, the jump lands short and the observer then walks down the list in visible steps.
+- `scroll-behavior: smooth` on `html` turns the restore into an animation from the top.
+  It is off, and `restoreScroll` pins it to `auto` for the jump regardless.
 
 ## 3D card preview
 
@@ -93,10 +127,16 @@ Card images are served from `https://arkhamdb.com` + the card's `imagesrc`.
 
 ## Icons
 
-The FFG symbol font is not redistributed here, so `[reaction]`, `[willpower]`, `[skull]` and
-friends render as small labelled pills (letters for skills and classes, words for chaos
-tokens). Unknown tokens from future sets degrade to a readable tag rather than leaking raw
-`[brackets]` into the text.
+The real Arkham symbols, from ArkhamDB's own `arkham-icons` font, vendored under `fonts/`.
+`[reaction]`, `[willpower]`, `[skull]`, `[per_investigator]` and the rest render as glyphs
+via the `.icon-*` classes in `css/arkham-icons.css`, which mirror ArkhamDB's naming. Class
+symbols (guardian/seeker/rogue/mystic/survivor) come from the same font. Tokens with no
+glyph — `[mythos]`, `[neutral]` and anything a future set introduces — degrade to a readable
+tag rather than leaking raw `[brackets]` into the text.
+
+Every glyph is also extracted to a standalone SVG in `img/icons/`. **[docs/icons.md](docs/icons.md)
+is the full index** — name, character, class, and where each icon is used. Run
+`python docs/regen-icons.py` to re-pull everything from ArkhamDB.
 
 ## Not in this version
 

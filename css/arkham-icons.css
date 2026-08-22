@@ -1,0 +1,114 @@
+/* ============================================================================
+   Arkham icon font
+   ----------------------------------------------------------------------------
+   Glyphs and class names mirror ArkhamDB's own app.css so that the [token]
+   markup returned by the API can be rendered verbatim. The five class symbols
+   (guardian/seeker/rogue/mystic/survivor) live in the font too — ArkhamDB draws
+   those from 16px PNGs instead, so their characters are not documented upstream;
+   they were identified against the core-set investigator cards.
+
+   Standalone SVG copies of every glyph: img/icons/<name>.svg
+   Full index: docs/icons.md
+   ========================================================================== */
+
+@font-face{
+  font-family:'arkham-icons';
+  src:url('../fonts/arkham-icons.woff') format('woff'),
+      url('../fonts/arkham-icons.ttf') format('truetype'),
+      url('../fonts/arkham-icons.otf') format('opentype');
+  font-weight:normal;font-style:normal;font-display:swap;
+}
+
+[class^="icon-"],[class*=" icon-"]{
+  font-family:'arkham-icons';
+  speak:none;font-style:normal;font-weight:normal;font-variant:normal;
+  text-transform:none;line-height:1;
+  display:inline-block;vertical-align:-.06em;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+
+/* ---------- abilities ---------- */
+.icon-action:before{content:"i"}
+.icon-reaction:before{content:"!"}
+.icon-fast:before,.icon-free:before,.icon-lightning:before{content:"j"}
+
+/* ---------- skills ---------- */
+.icon-willpower:before,.icon-will:before{content:"p"}
+.icon-intellect:before,.icon-lore:before{content:"b"}
+.icon-combat:before,.icon-strength:before{content:"c"}
+.icon-agility:before{content:"a"}
+/* Deliberate deviation from app.css, which sets content:"?" — a character the font
+   has no glyph for, so ArkhamDB renders a literal question mark. The star is the
+   printed wild icon, and it is the only star the font ships (see .icon-unique). */
+.icon-wild:before{content:"s"}
+
+/* ---------- classes / factions ---------- */
+.icon-guardian:before{content:"f"}
+.icon-seeker:before{content:"h"}
+.icon-rogue:before{content:"d"}
+.icon-mystic:before{content:"g"}
+.icon-survivor:before{content:"e"}
+
+/* ---------- chaos bag tokens ---------- */
+.icon-skull:before{content:"k"}
+.icon-cultist:before{content:"l"}
+.icon-tablet:before{content:"q"}
+.icon-elder_thing:before{content:"n"}
+.icon-elder_sign:before,.icon-eldersign:before{content:"o"}
+.icon-auto_fail:before{content:"m"}
+.icon-bless:before{content:"v"}
+.icon-curse:before{content:"w"}
+.icon-frost:before{content:"x"}
+.icon-null:before{content:"t"}
+
+/* ---------- seals (The Circle Undone) ---------- */
+.icon-seal_a:before{content:"1"}
+.icon-seal_b:before{content:"2"}
+.icon-seal_c:before{content:"3"}
+.icon-seal_d:before{content:"4"}
+.icon-seal_e:before{content:"5"}
+
+/* ---------- misc ---------- */
+.icon-unique:before{content:"s";font-size:1.1em}
+.icon-per_investigator:before{content:"u"}
+
+/* ---------- sizes ---------- */
+.icon-large{font-size:1.35em}
+.icon-big{font-size:1.9em}
+
+/* ---------- colours ----------
+   Skill hues follow the printed cards (ArkhamDB uses the same five, in their
+   ink-on-paper values); these are the light-on-dark equivalents. */
+:root{
+  --sk-willpower:#5aa7e6;
+  --sk-intellect:#b884cd;
+  --sk-combat:#e26a5c;
+  --sk-agility:#4ec48d;
+  --sk-wild:#dcc27f;
+  --tok-bless:#f5c542;
+  --tok-curse:#8f6ad6;
+  --tok-frost:#8fd3ee;
+}
+
+.color-willpower{color:var(--sk-willpower)}
+.color-intellect{color:var(--sk-intellect)}
+.color-combat{color:var(--sk-combat)}
+.color-agility{color:var(--sk-agility)}
+.color-wild{color:var(--sk-wild)}
+
+.color-guardian{color:var(--f-guardian)}
+.color-seeker{color:var(--f-seeker)}
+.color-rogue{color:var(--f-rogue)}
+.color-mystic{color:var(--f-mystic)}
+.color-survivor{color:var(--f-survivor)}
+.color-neutral{color:var(--f-neutral)}
+.color-mythos{color:var(--f-mythos)}
+
+.color-action{color:var(--ink)}
+.color-reaction{color:var(--green)}
+.color-fast{color:var(--amber)}
+.color-token{color:var(--f-mythos)}
+.color-bless{color:var(--tok-bless)}
+.color-curse{color:var(--tok-curse)}
+.color-frost{color:var(--tok-frost)}
+.color-unique{color:var(--indigo-soft)}
