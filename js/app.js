@@ -136,11 +136,6 @@
 
   function isLandscape(card) { return LANDSCAPE.indexOf(card.type_code) !== -1; }
 
-  function cardImage(card, back) {
-    var src = API.imageUrl(back ? card.backimagesrc : card.imagesrc);
-    return src;
-  }
-
   function levelSuffix(card) {
     return (card.xp !== undefined && card.xp !== null) ? ' (' + card.xp + ')' : '';
   }
@@ -354,6 +349,7 @@
       showSearch(true, 'Filter ' + cards.length + ' cards…');
       searchInput.value = state.query;
       wireFacets();
+      Card3D.bind(document.getElementById('card-grid'));   // delegated: covers later batches
 
       applyFilters();
       restoreScroll(location.hash);
@@ -516,12 +512,13 @@
   }
 
   function tileHtml(card) {
-    var src = cardImage(card, false);
     var fac = facClass(card.faction_code);
     var sub = card.subname || '';
-    var art = src
-      ? '<img src="' + esc(src) + '" alt="' + esc(card.name) + '" loading="lazy" decoding="async">'
-      : '<span class="noimg">No image</span>';
+    /* Front face only: a tile never rotates past 90°, so the reverse would be
+       a second image request for pixels nobody sees. */
+    var art = Card3D.html(card, { lazy: true, 'class': 'tile-img' }) ||
+      '<div class="tile-img' + (isLandscape(card) ? ' landscape' : '') + '">' +
+        '<span class="noimg">No image</span></div>';
 
     var facMark = Markup.hasFactionIcon(card.faction_code)
       ? Markup.iconHtml(card.faction_code, fac, card.faction_name, 'tile-fac')
@@ -529,7 +526,7 @@
 
     return '' +
       '<a class="card-tile" href="#/card/' + esc(card.code) + '">' +
-        '<div class="tile-img' + (isLandscape(card) ? ' landscape' : '') + '">' + art + '</div>' +
+        art +
         '<div class="tile-name">' +
           facMark +
           '<span>' + esc(card.name) + levelSuffix(card) + '</span>' +
@@ -677,12 +674,10 @@
 
   function detailHtml(card) {
     var fac = facClass(card.faction_code);
-    var front = cardImage(card, false);
-    var back = cardImage(card, true);
-
-    var art = front
-      ? '<img id="detail-img" src="' + esc(front) + '" alt="' + esc(card.name) + '">'
-      : '<div class="noimg">No image available</div>';
+    /* Both faces here: the flip button turns the sheet over instead of swapping
+       a src, so the reverse has to be in the DOM. Cards without a printed back
+       get the generic deck back, same as the full-screen viewer. */
+    var art = Card3D.html(card, { back: true, id: 'art-card' });
 
     var stats = statsFor(card);
 
@@ -728,11 +723,13 @@
     return '' +
       '<div class="detail">' +
         '<aside class="detail-art">' +
-          '<div class="frame' + (isLandscape(card) ? ' landscape' : '') + '" ' +
+          '<div class="frame' + (isLandscape(card) ? ' landscape' : '') +
+            (art ? ' frame-3d' : '') + '" ' +
             'id="art-frame" role="button" tabindex="0" ' +
-            'aria-label="Open ' + esc(card.name) + ' in the 3D viewer">' + art + '</div>' +
-          '<div class="frame-hint">Click the card to inspect it in 3D</div>' +
-          (back ? '<button class="btn-ghost flip-btn" id="flip">Flip card ⤾</button>' : '') +
+            'aria-label="Open ' + esc(card.name) + ' in the 3D viewer">' +
+            (art || '<div class="noimg">No image available</div>') + '</div>' +
+          '<div class="frame-hint">Hover to tilt · click to inspect in 3D</div>' +
+          (art ? '<button class="btn-ghost flip-btn" id="flip">Flip card ⤾</button>' : '') +
         '</aside>' +
 
         '<div class="detail-body">' +
@@ -772,12 +769,10 @@
 
   function wireFlip(card) {
     var btn = document.getElementById('flip');
-    var img = document.getElementById('detail-img');
-    if (!btn || !img) return;
-    var showingBack = false;
+    var stage = document.getElementById('art-card');
+    if (!btn || !stage) return;
     btn.addEventListener('click', function () {
-      showingBack = !showingBack;
-      img.src = cardImage(card, showingBack);
+      var showingBack = Card3D.flip(stage);
       btn.textContent = showingBack ? 'Show front ⤾' : 'Flip card ⤾';
     });
   }
@@ -785,6 +780,7 @@
   function wireViewer(card) {
     var frame = document.getElementById('art-frame');
     if (!frame) return;
+    Card3D.bind(frame);
     frame.addEventListener('click', function () { Viewer.open(card); });
     frame.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); Viewer.open(card); }

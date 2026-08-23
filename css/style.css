@@ -431,11 +431,14 @@ a{color:inherit;text-decoration:none}
 
 .tile-img{
   position:relative;width:100%;aspect-ratio:5/7;
-  overflow:hidden;background:rgba(255,255,255,.04);
-  border:1px solid var(--line-2);
   display:grid;place-items:center;
 }
 .tile-img.landscape{aspect-ratio:7/5}
+/* only the flat placeholder tile is a surface of its own — a 3D tile hands the
+   border, the fill and the clipping to its faces, and must not clip the tilt */
+.tile-img:not(.c3d-stage){
+  overflow:hidden;border:1px solid var(--line-2);background:rgba(255,255,255,.04);
+}
 
 /* Card corners, everywhere a card is shown: 2.9% of the card's width, matched
    on the vertical axis so the curve stays circular. Portrait art is 5:7,
@@ -444,8 +447,6 @@ a{color:inherit;text-decoration:none}
 .detail-art .frame{border-radius:2.9% / 2.07%}
 .tile-img.landscape,
 .detail-art .frame.landscape{border-radius:2.9% / 4.06%}
-.tile-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s var(--ee)}
-.card-tile:hover .tile-img img{transform:scale(1.04)}
 .tile-img .noimg{
   font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;
   text-transform:uppercase;color:var(--ink-4);padding:14px;text-align:center;
@@ -466,6 +467,52 @@ a{color:inherit;text-decoration:none}
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));
 }
 .tile-sub{font-family:var(--font-body);font-size:11px;color:var(--ink-4);margin-top:-4px;padding-left:9px}
+
+/* ---------- inline 3D cards (grid tiles + detail art) ---------- */
+/* Same construction as the full-screen viewer, shrunk: the stage owns the
+   perspective, the card is a zero-thickness sheet, each face hides its own
+   backface. JS writes the transform on .c3d and the glare position on the stage. */
+.c3d-stage{
+  position:relative;width:100%;aspect-ratio:5/7;
+  perspective:900px;overflow:visible;
+}
+.c3d-stage.landscape{aspect-ratio:7/5}
+.c3d{
+  position:relative;width:100%;height:100%;
+  transform-style:preserve-3d;
+  transition:transform .6s var(--ee);
+}
+/* while the pointer is on the card the tilt must track it 1:1 — the easing is
+   only there for the flip and for the drop back to flat on leave */
+.c3d-stage.tracking .c3d{transition:none}
+
+.c3d-face{
+  position:absolute;inset:0;overflow:hidden;
+  border-radius:2.9% / 2.07%;
+  border:1px solid var(--line-2);background:rgba(255,255,255,.04);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  box-shadow:0 16px 34px rgba(0,0,0,.45);
+}
+.c3d-stage.landscape .c3d-face{border-radius:2.9% / 4.06%}
+.c3d-face img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  user-select:none;-webkit-user-drag:none;
+}
+.c3d-back{transform:rotateY(180deg)}
+
+/* specular sheen that follows the pointer, clipped by the face */
+.c3d-glare{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),
+    rgba(255,255,255,.30),rgba(255,255,255,.06) 38%,rgba(255,255,255,0) 62%);
+  opacity:0;transition:opacity .35s var(--ee);
+}
+.c3d-stage.tracking .c3d-glare{opacity:1}
+
+@media (prefers-reduced-motion:reduce){
+  .c3d{transition:none}
+  .c3d-glare{display:none}
+}
 
 /* faction accent bars */
 .fac-guardian{background:var(--f-guardian)!important}
@@ -496,6 +543,11 @@ a{color:inherit;text-decoration:none}
   background:rgba(255,255,255,.04);box-shadow:0 24px 60px rgba(0,0,0,.5);
 }
 .detail-art .frame img{width:100%;display:block}
+/* the 3D art hands its chrome to the faces; the frame is only the stage */
+.detail-art .frame.frame-3d{
+  overflow:visible;border:none;background:none;box-shadow:none;
+}
+.detail-art .frame-3d .c3d-face{box-shadow:0 24px 60px rgba(0,0,0,.5)}
 .detail-art .frame .noimg{
   aspect-ratio:5/7;display:grid;place-items:center;padding:24px;text-align:center;
   font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-4);
