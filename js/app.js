@@ -524,6 +524,11 @@
          : state.levels;
   }
 
+  /* The tallies are still computed — they cost nothing on top of the pass that
+     collects the options — but a number on every chip crowds a bar that already
+     carries four groups. Flip this back on to show them again. */
+  var SHOW_FACET_COUNTS = false;
+
   function facetGroup(label, group, items, selected, colorise) {
     if (items.length < 2) return '';   // a single option filters nothing
     return '' +
@@ -537,7 +542,9 @@
             (colorise ? ' facet-' + facClass(it.code) : '') +
             '" data-group="' + group + '" data-value="' + esc(it.code) + '"' +
             ' aria-pressed="' + (on ? 'true' : 'false') + '">' +
-            glyph + esc(it.label) + '<span class="n">' + it.count + '</span></button>';
+            glyph + esc(it.label) +
+            (SHOW_FACET_COUNTS ? '<span class="n">' + it.count + '</span>' : '') +
+          '</button>';
         }).join('') +
       '</div>';
   }
