@@ -3,10 +3,18 @@
   'use strict';
 
   var view = document.getElementById('view');
-  var crumb = document.getElementById('breadcrumb');
+  var head = document.getElementById('site-head');
   var searchWrap = document.getElementById('search-wrap');
   var searchInput = document.getElementById('search');
   var replacedBtn = document.getElementById('toggle-replaced');
+  var backBtn = document.getElementById('back-btn');
+  var filterbar = document.getElementById('filterbar');
+  var fbGroups = document.getElementById('fb-groups');
+  var filtersBtn = document.getElementById('filters-toggle');
+  var filtersN = document.getElementById('filters-n');
+  var picker = document.getElementById('pack-picker');
+  var pickerQ = document.getElementById('pp-q');
+  var pickerList = document.getElementById('pp-list');
 
   var esc = Markup.escapeHtml;
   var text = Markup.renderText;
@@ -72,16 +80,26 @@
 
   var state = {
     token: 0,        // invalidates in-flight renders when the route changes
-    pack: null,      // pack code of the current grid view
-    cards: [],       // cards for the current pack view
+    packs: [],       // selected pack codes; empty means "every pack"
+    cards: [],       // cards for the current pack selection
     shown: 0,
     query: '',
     types: [],       // selected type_codes; empty means "no type filter"
     factions: [],    // selected faction_codes; empty means "no faction filter"
+    levels: [],      // selected xp values, as strings; empty means "no level filter"
     observer: null
   };
   var scrollMemory = Object.create(null);
-  var filterMemory = Object.create(null);   // pack code -> {query, types, factions}
+  var filterMemory = Object.create(null);   // pack key -> {query, types, factions, levels}
+
+  var packIndex = Object.create(null);      // pack code -> pack
+  var packList = [];                        // packs in catalogue order
+  var pickerBuilt = false;
+
+  var lastHash = location.hash || '#/';
+  var prevHash = null;                      // the route we arrived from
+  var lastGrid = null;                      // last card-browser hash, for the back button
+  var filtersOpen = true;
 
   /* The 43 packs the Investigator/Campaign Expansions superseded. Shown by
      default; the topbar toggle drops them for a collection-shaped catalogue. */
@@ -110,19 +128,28 @@
       '</div>');
   }
 
-  function setCrumb(parts) {
-    if (!parts || !parts.length) { crumb.hidden = true; crumb.innerHTML = ''; return; }
-    crumb.hidden = false;
-    html(crumb, parts.map(function (p) {
-      return p.href ? '<a href="' + esc(p.href) + '">' + esc(p.label) + '</a>'
-                    : '<span>' + esc(p.label) + '</span>';
-    }).join('<span class="sep">/</span>'));
-  }
-
   function showSearch(show, placeholder) {
     searchWrap.hidden = !show;
     if (show) searchInput.placeholder = placeholder || 'Filter cards…';
     else searchInput.value = '';
+  }
+
+  function showBack(show, href) {
+    backBtn.hidden = !show;
+    if (show) backBtn.setAttribute('href', href || '#/');
+  }
+
+  /* The header is fixed, so the view has to reserve its height — and that
+     height changes as the filter rows wrap or the bar is collapsed. */
+  function syncHeadHeight() {
+    document.documentElement.style.setProperty('--head-h', head.offsetHeight + 'px');
+  }
+
+  function showFilters(show) {
+    filtersBtn.hidden = !show;
+    filterbar.hidden = !show || !filtersOpen;
+    if (!show) closePicker();
+    syncHeadHeight();
   }
 
   /* The superseded-packs toggle lives in the topbar, so it outlives the view
@@ -136,16 +163,34 @@
 
   function isLandscape(card) { return LANDSCAPE.indexOf(card.type_code) !== -1; }
 
-  function levelSuffix(card) {
-    return (card.xp !== undefined && card.xp !== null) ? ' (' + card.xp + ')' : '';
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  /* `available` is an ISO date. Parsed by hand rather than through Date, which
+     would read the bare date as UTC and slide it a day back west of Greenwich. */
+  function releaseDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+    if (!m) return '';
+    return String(+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + m[1];
+  }
+
+  function indexPacks(packs) {
+    packList = packs;
+    packIndex = Object.create(null);
+    packs.forEach(function (p) { packIndex[p.code] = p; });
+  }
+
+  function packName(code) {
+    return packIndex[code] ? packIndex[code].name : code;
   }
 
   /* ---------- home: pack list ---------- */
 
   function renderHome() {
     var token = ++state.token;
-    setCrumb(null);
     showSearch(false);
+    showBack(false);
+    showFilters(false);
     loading('Consulting the index');
 
     if (homeData) { paintHome(); restoreScroll('#/'); return; }
@@ -153,6 +198,7 @@
     Promise.all([API.getPacks(), API.getCycles()]).then(function (res) {
       if (token !== state.token) return;
       homeData = { packs: res[0], cycles: res[1] };
+      indexPacks(res[0]);
       paintHome();
       restoreScroll('#/');
     }).catch(function (err) { if (token === state.token) failure(err); });
@@ -270,6 +316,7 @@
 
   function packCardHtml(p) {
     var count = p.known || 0;
+    var released = releaseDate(p.available);
     /* Covers are keyed by FFG product code, so packs FFG never boxed on their
        own (novellas, side stories) simply render without one. */
     var cover = PackCovers.url(p.code);
@@ -290,7 +337,10 @@
             '<span class="pc-code" title="' + esc(p.code) + '">' + esc(ffg || p.code) + '</span>' +
           '</div>' +
           '<div class="pc-foot">' +
-            '<span class="pc-count">' + count + (count === 1 ? ' card' : ' cards') + '</span>' +
+            '<span class="pc-meta">' +
+              '<span class="pc-count">' + count + (count === 1 ? ' card' : ' cards') + '</span>' +
+              (released ? '<span class="pc-date">' + esc(released) + '</span>' : '') +
+            '</span>' +
             '<span class="pc-arr">→</span>' +
           '</div>' +
         '</div>' +
@@ -299,61 +349,126 @@
 
   /* ---------- pack: card grid ---------- */
 
-  function renderPack(code) {
+  /* The route carries the pack filter: a comma-separated list of pack codes,
+     or `_all` for the unfiltered pool. Picking a pack on the home page is just
+     a pre-filled version of the pack filter the card browser exposes. */
+  function packKey(codes) { return codes.length ? codes.join(',') : '_all'; }
+
+  function parsePacks(spec) {
+    var seen = Object.create(null);
+    return spec.split(',').filter(function (c) {
+      if (!c || c === '_all' || seen[c]) return false;
+      seen[c] = true;
+      return true;
+    });
+  }
+
+  /* One request per selected pack, merged in the order the codes were given.
+     A single pack (or the whole pool) is handed back as the API's own cached
+     array, so it must never be sorted in place here. */
+  function loadCards(codes) {
+    if (!codes.length) return API.getCards('_all');
+    if (codes.length === 1) return API.getCards(codes[0]);
+
+    var rank = Object.create(null);
+    codes.forEach(function (c, i) { rank[c] = i; });
+
+    return Promise.all(codes.map(function (c) { return API.getCards(c); }))
+      .then(function (lists) {
+        var out = [];
+        lists.forEach(function (l) { out = out.concat(l); });
+        return out.sort(function (a, b) {
+          return a.pack_code === b.pack_code
+            ? a.position - b.position
+            : rank[a.pack_code] - rank[b.pack_code];
+        });
+      });
+  }
+
+  function renderPack(spec) {
     var token = ++state.token;
-    var isAll = code === '_all';
-    state.query = '';
+    var codes = parsePacks(spec);
 
-    setCrumb([{ label: 'Packs', href: '#/' }, { label: isAll ? 'All Cards' : code }]);
     showSearch(false);
+    showBack(false);
     showReplacedToggle(false);
-    loading(isAll ? 'Gathering the whole collection' : 'Opening the pack');
+    showFilters(false);
+    loading(codes.length ? 'Opening the pack' : 'Gathering the whole collection');
 
-    Promise.all([API.getPacks(), API.getCards(code)]).then(function (res) {
+    Promise.all([API.getPacks(), loadCards(codes)]).then(function (res) {
       if (token !== state.token) return;
 
-      var packs = res[0], cards = res[1];
-      var pack = null;
-      for (var i = 0; i < packs.length; i++) if (packs[i].code === code) pack = packs[i];
-
-      var title = isAll ? 'All Cards' : (pack ? pack.name : code);
-      setCrumb([{ label: 'Packs', href: '#/' }, { label: title }]);
-
-      state.pack = code;
-      state.cards = cards;
+      indexPacks(res[0]);
+      state.packs = codes;
+      state.cards = res[1];
       state.shown = 0;
 
-      /* Restore whatever was selected last time this pack was open, so opening
-         a card and coming back doesn't wipe the filters. */
-      var saved = filterMemory[code] || { query: '', types: [], factions: [] };
+      /* Restore whatever was selected last time this pack set was open, so
+         opening a card and coming back doesn't wipe the filters. */
+      var saved = filterMemory[packKey(codes)] ||
+                  { query: '', types: [], factions: [], levels: [] };
       state.query = saved.query;
       state.types = saved.types.slice();
       state.factions = saved.factions.slice();
+      state.levels = saved.levels.slice();
 
       html(view,
-        '<div class="toolbar">' +
-          '<div>' +
-            '<h1>' + esc(title) + '</h1>' +
-            '<div class="tb-meta">' +
-              '<span class="chip" id="count-chip">' + cards.length + ' cards</span>' +
-              (pack ? '<span class="chip">' + esc(pack.code) + '</span>' : '') +
-              (pack && pack.available ? '<span class="chip">' + esc(pack.available) + '</span>' : '') +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        facetsHtml(cards) +
         '<div class="card-grid" id="card-grid"></div>' +
         '<div class="sentinel" id="sentinel"></div>' +
         '<div id="grid-empty"></div>');
 
-      showSearch(true, 'Filter ' + cards.length + ' cards…');
+      showSearch(true, 'Filter ' + state.cards.length + ' cards…');
       searchInput.value = state.query;
-      wireFacets();
+      buildPicker();
+      renderFilterbar();
+      showFilters(true);
       Card3D.bind(document.getElementById('card-grid'));   // delegated: covers later batches
 
+      lastGrid = location.hash;
       applyFilters();
       restoreScroll(location.hash);
     }).catch(function (err) { if (token === state.token) failure(err); });
+  }
+
+  /* Editing the pack selection rewrites the route in place instead of pushing
+     a new one. Assembling a four-pack view would otherwise bury the page the
+     browser's Back button ought to return to under four intermediate grids. */
+  function setPacks(codes) {
+    var order = Object.create(null);
+    packList.forEach(function (p, i) { order[p.code] = i; });
+    codes = codes.slice().sort(function (a, b) {
+      return (order[a] === undefined ? 1e9 : order[a]) -
+             (order[b] === undefined ? 1e9 : order[b]);
+    });
+
+    var token = ++state.token;
+    state.packs = codes;
+    lastHash = lastGrid = '#/pack/' + packKey(codes);
+    history.replaceState(null, '', lastHash);
+
+    renderFilterbar();               // the pills answer immediately
+    filterbar.classList.add('busy');
+
+    loadCards(codes).then(function (cards) {
+      if (token !== state.token) return;
+      filterbar.classList.remove('busy');
+      state.cards = cards;
+      searchInput.placeholder = 'Filter ' + cards.length + ' cards…';
+      pruneFilters();
+      renderFilterbar();
+      applyFilters();
+    }).catch(function (err) {
+      if (token !== state.token) return;
+      filterbar.classList.remove('busy');
+      failure(err);
+    });
+  }
+
+  function togglePack(code) {
+    var at = state.packs.indexOf(code);
+    var next = state.packs.slice();
+    if (at === -1) next.push(code); else next.splice(at, 1);
+    setPacks(next);
   }
 
   function matches(card, q) {
@@ -367,8 +482,8 @@
 
   /* ---------- facets ---------- */
 
-  /* Tallies one field across the pack and returns it in display order, so a
-     pack only ever offers toggles for the types and factions it contains. */
+  /* Tallies one field across the pool and returns it in display order, so a
+     selection only ever offers toggles for the values it actually contains. */
   function facetsOf(cards, codeKey, nameKey, order) {
     var seen = Object.create(null);
     var out = [];
@@ -389,67 +504,180 @@
     });
   }
 
-  function facetRow(label, group, items, selected, colorise) {
+  /* Level is `xp`, which only player cards carry — encounter cards have none
+     and are filtered out entirely once a level is picked. */
+  function levelFacets(cards) {
+    var seen = Object.create(null);
+    var out = [];
+    cards.forEach(function (c) {
+      if (c.xp === null || c.xp === undefined) return;
+      var k = String(c.xp);
+      if (!seen[k]) { seen[k] = { code: k, label: k, count: 0 }; out.push(seen[k]); }
+      seen[k].count++;
+    });
+    return out.sort(function (a, b) { return a.code - b.code; });
+  }
+
+  function facetList(group) {
+    return group === 'type' ? state.types
+         : group === 'faction' ? state.factions
+         : state.levels;
+  }
+
+  function facetGroup(label, group, items, selected, colorise) {
     if (items.length < 2) return '';   // a single option filters nothing
     return '' +
-      '<div class="facet-row">' +
-        '<span class="facet-label">' + esc(label) + '</span>' +
-        '<div class="facet-chips">' +
-          items.map(function (it) {
-            var on = selected.indexOf(it.code) !== -1;
-            var glyph = colorise && Markup.hasFactionIcon(it.code)
-              ? Markup.iconHtml(it.code, '', '', 'facet-ico') : '';
-            return '<button type="button" class="facet' + (on ? ' on' : '') +
-              (colorise ? ' facet-' + facClass(it.code) : '') +
-              '" data-group="' + group + '" data-value="' + esc(it.code) + '"' +
-              ' aria-pressed="' + (on ? 'true' : 'false') + '">' +
-              glyph + esc(it.label) + '<span class="n">' + it.count + '</span></button>';
-          }).join('') +
-        '</div>' +
+      '<div class="fb-group">' +
+        '<span class="fb-label">' + esc(label) + '</span>' +
+        items.map(function (it) {
+          var on = selected.indexOf(it.code) !== -1;
+          var glyph = colorise && Markup.hasFactionIcon(it.code)
+            ? Markup.iconHtml(it.code, '', '', 'facet-ico') : '';
+          return '<button type="button" class="facet' + (on ? ' on' : '') +
+            (colorise ? ' facet-' + facClass(it.code) : '') +
+            '" data-group="' + group + '" data-value="' + esc(it.code) + '"' +
+            ' aria-pressed="' + (on ? 'true' : 'false') + '">' +
+            glyph + esc(it.label) + '<span class="n">' + it.count + '</span></button>';
+        }).join('') +
       '</div>';
   }
 
-  function facetsHtml(cards) {
-    var types = facetsOf(cards, 'type_code', 'type_name', TYPE_ORDER);
-    var factions = facetsOf(cards, 'faction_code', 'faction_name', FACTION_ORDER);
-    var rows = facetRow('Type', 'type', types, state.types, false) +
-               facetRow('Faction', 'faction', factions, state.factions, true);
-    if (!rows) return '';
-    return '<div class="facets" id="facets">' + rows +
-      '<button type="button" class="facet-clear" id="facet-clear" hidden>Clear filters</button>' +
+  function packGroupHtml() {
+    var pills = state.packs.length
+      ? state.packs.map(function (code) {
+          var name = packName(code);
+          return '<span class="pack-pill">' + esc(name) +
+            '<button type="button" class="pp-x" data-code="' + esc(code) + '"' +
+            ' aria-label="Remove ' + esc(name) + '">×</button></span>';
+        }).join('')
+      : '<span class="pack-pill all">All packs</span>';
+
+    return '' +
+      '<div class="fb-group fb-packs">' +
+        '<span class="fb-label">Packs</span>' + pills +
+        '<button type="button" class="fb-add" id="fb-add" aria-expanded="false"' +
+          ' aria-controls="pack-picker">+ Pack</button>' +
       '</div>';
   }
 
-  function wireFacets() {
-    var box = document.getElementById('facets');
-    if (!box) return;
+  function renderFilterbar() {
+    var cards = state.cards;
+    html(fbGroups,
+      packGroupHtml() +
+      facetGroup('Level', 'level', levelFacets(cards), state.levels, false) +
+      facetGroup('Type', 'type',
+        facetsOf(cards, 'type_code', 'type_name', TYPE_ORDER), state.types, false) +
+      facetGroup('Class', 'faction',
+        facetsOf(cards, 'faction_code', 'faction_name', FACTION_ORDER), state.factions, true) +
+      '<div class="fb-group fb-tail">' +
+        '<span class="chip" id="count-chip">' + cards.length + ' cards</span>' +
+        '<button type="button" class="facet-clear" id="facet-clear" hidden>Clear filters</button>' +
+      '</div>');
 
-    box.addEventListener('click', function (e) {
-      var btn = e.target.closest('.facet');
-      if (btn) {
-        var list = btn.dataset.group === 'type' ? state.types : state.factions;
-        var at = list.indexOf(btn.dataset.value);
-        if (at === -1) list.push(btn.dataset.value); else list.splice(at, 1);
-        btn.classList.toggle('on', at === -1);
-        btn.setAttribute('aria-pressed', at === -1 ? 'true' : 'false');
-        applyFilters();
-        return;
-      }
-      if (e.target.closest('#facet-clear')) clearFacets();
+    markPicked();
+    syncFilterCount();
+    syncHeadHeight();
+  }
+
+  /* A pack that leaves the selection can take the only card of some type or
+     level with it; a toggle for a value no longer in the pool would filter
+     everything away with no chip left to switch off. */
+  function pruneFilters() {
+    var live = { type: Object.create(null), faction: Object.create(null), level: Object.create(null) };
+    state.cards.forEach(function (c) {
+      if (c.type_code) live.type[c.type_code] = true;
+      if (c.faction_code) live.faction[c.faction_code] = true;
+      if (c.xp !== null && c.xp !== undefined) live.level[String(c.xp)] = true;
     });
+    function keep(list, set) {
+      return list.filter(function (v) { return set[v] === true; });
+    }
+    state.types = keep(state.types, live.type);
+    state.factions = keep(state.factions, live.faction);
+    state.levels = keep(state.levels, live.level);
+  }
+
+  function syncFilterCount() {
+    var n = state.packs.length + state.types.length +
+            state.factions.length + state.levels.length;
+    filtersN.textContent = n || '';
+    filtersBtn.classList.toggle('on', n > 0);
   }
 
   function clearFacets() {
     state.types = [];
     state.factions = [];
-    var box = document.getElementById('facets');
-    if (box) {
-      box.querySelectorAll('.facet.on').forEach(function (b) {
-        b.classList.remove('on');
-        b.setAttribute('aria-pressed', 'false');
-      });
-    }
+    state.levels = [];
+    renderFilterbar();
     applyFilters();
+  }
+
+  /* ---------- pack picker ---------- */
+
+  function buildPicker() {
+    if (pickerBuilt || !packList.length) return;
+    pickerBuilt = true;
+
+    var out = '';
+    var cycle = null;
+    packList.forEach(function (p) {
+      if (p.cycle_position !== cycle) {
+        cycle = p.cycle_position;
+        out += '<div class="pp-head" data-cycle="' + esc(String(cycle)) + '">' +
+          esc(cycleLabel(cycle, packList.filter(function (q) {
+            return q.cycle_position === cycle;
+          }), homeData && homeData.cycles)) + '</div>';
+      }
+      out += '<button type="button" class="pp-item" data-code="' + esc(p.code) + '"' +
+        ' data-name="' + esc(p.name.toLowerCase() + ' ' + p.code) + '">' +
+        '<span class="pp-tick" aria-hidden="true">✓</span>' +
+        '<span class="pp-name">' + esc(p.name) + '</span>' +
+        '<span class="pp-n">' + (p.known || 0) + '</span>' +
+      '</button>';
+    });
+    html(pickerList, out);
+  }
+
+  function markPicked() {
+    pickerList.querySelectorAll('.pp-item').forEach(function (b) {
+      var on = state.packs.indexOf(b.dataset.code) !== -1;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function filterPicker(q) {
+    var groups = Object.create(null);      // cycle -> any visible pack
+    var current = null;
+    pickerList.querySelectorAll('.pp-head,.pp-item').forEach(function (el) {
+      if (el.classList.contains('pp-head')) { current = el; groups[el.dataset.cycle] = false; return; }
+      var hit = !q || el.dataset.name.indexOf(q) !== -1;
+      el.hidden = !hit;
+      if (hit && current) groups[current.dataset.cycle] = true;
+    });
+    pickerList.querySelectorAll('.pp-head').forEach(function (h) {
+      h.hidden = !groups[h.dataset.cycle];
+    });
+  }
+
+  function openPicker() {
+    picker.hidden = false;
+    var add = document.getElementById('fb-add');
+    if (add) add.setAttribute('aria-expanded', 'true');
+    pickerQ.value = '';
+    filterPicker('');
+    pickerQ.focus();
+  }
+
+  function closePicker() {
+    if (picker.hidden) return;
+    picker.hidden = true;
+    var add = document.getElementById('fb-add');
+    if (add) add.setAttribute('aria-expanded', 'false');
+  }
+
+  function togglePicker() {
+    if (picker.hidden) openPicker(); else closePicker();
   }
 
   /* ---------- filtering ---------- */
@@ -458,6 +686,7 @@
   function passes(card) {
     if (state.types.length && state.types.indexOf(card.type_code) === -1) return false;
     if (state.factions.length && state.factions.indexOf(card.faction_code) === -1) return false;
+    if (state.levels.length && state.levels.indexOf(String(card.xp)) === -1) return false;
     return matches(card, state.query);
   }
 
@@ -465,29 +694,28 @@
     var grid = document.getElementById('card-grid');
     if (!grid) return;
 
-    if (state.pack) {
-      filterMemory[state.pack] = {
-        query: state.query,
-        types: state.types.slice(),
-        factions: state.factions.slice()
-      };
-    }
+    filterMemory[packKey(state.packs)] = {
+      query: state.query,
+      types: state.types.slice(),
+      factions: state.factions.slice(),
+      levels: state.levels.slice()
+    };
 
     state.filtered = state.cards.filter(passes);
     state.shown = 0;
     grid.innerHTML = '';
 
-    var active = state.query || state.types.length || state.factions.length;
+    var facets = state.types.length + state.factions.length + state.levels.length;
 
     var chip = document.getElementById('count-chip');
     if (chip) {
-      chip.textContent = active
+      chip.textContent = (state.query || facets)
         ? state.filtered.length + ' of ' + state.cards.length + ' cards'
         : state.cards.length + ' cards';
     }
 
     var clearBtn = document.getElementById('facet-clear');
-    if (clearBtn) clearBtn.hidden = !(state.types.length || state.factions.length);
+    if (clearBtn) clearBtn.hidden = !facets;
 
     var empty = document.getElementById('grid-empty');
     if (empty) {
@@ -529,7 +757,7 @@
         art +
         '<div class="tile-name">' +
           facMark +
-          '<span>' + esc(card.name) + levelSuffix(card) + '</span>' +
+          '<span>' + esc(card.name) + '</span>' +
         '</div>' +
         (sub ? '<div class="tile-sub">' + esc(sub) + '</div>' : '') +
       '</a>';
@@ -555,18 +783,16 @@
     var token = ++state.token;
     showSearch(false);
     showReplacedToggle(false);
-    setCrumb([{ label: 'Packs', href: '#/' }, { label: code }]);
+    showFilters(false);
+    /* Whatever grid we came from, filters and all — falling back to the card's
+       own pack for a cold link straight into a card. */
+    showBack(true, lastGrid || '#/');
     loading('Retrieving the card');
 
     API.getCard(code).then(function (card) {
       if (token !== state.token) return;
 
-      setCrumb([
-        { label: 'Packs', href: '#/' },
-        { label: card.pack_name, href: '#/pack/' + card.pack_code },
-        { label: card.name }
-      ]);
-
+      if (!lastGrid) showBack(true, '#/pack/' + card.pack_code);
       html(view, detailHtml(card));
       wireFlip(card);
       wireViewer(card);
@@ -818,17 +1044,22 @@
   function route() {
     if (state.observer) { state.observer.disconnect(); state.observer = null; }
     Viewer.close();   // a back/forward press while the preview is open should dismiss it
+    closePicker();
 
-    var hash = location.hash.replace(/^#\/?/, '');
+    var current = location.hash || '#/';
+    if (current !== lastHash) { prevHash = lastHash; lastHash = current; }
+
+    var hash = current.replace(/^#\/?/, '');
     var parts = hash.split('/').filter(Boolean);
 
     if (!parts.length) return renderHome();
     if (parts[0] === 'pack' && parts[1]) return renderPack(decodeURIComponent(parts[1]));
     if (parts[0] === 'card' && parts[1]) return renderCard(decodeURIComponent(parts[1]));
 
-    setCrumb(null);
     showSearch(false);
+    showBack(false);
     showReplacedToggle(false);
+    showFilters(false);
     html(view,
       '<div class="state error">' +
         '<div class="mono-tag">Uncharted route</div>' +
@@ -855,13 +1086,74 @@
     paintHome();
   });
 
+  /* The grid we came from is one entry back, so going back keeps the forward
+     stack intact instead of piling a second copy of the grid on top of it. */
+  backBtn.addEventListener('click', function (e) {
+    if (prevHash && prevHash === backBtn.getAttribute('href')) {
+      e.preventDefault();
+      history.back();
+    }
+  });
+
+  filtersBtn.addEventListener('click', function () {
+    filtersOpen = !filtersOpen;
+    filterbar.hidden = !filtersOpen;
+    filtersBtn.setAttribute('aria-expanded', filtersOpen ? 'true' : 'false');
+    if (!filtersOpen) closePicker();
+    syncHeadHeight();
+  });
+
+  filterbar.addEventListener('click', function (e) {
+    var remove = e.target.closest('.pp-x');
+    if (remove) {
+      setPacks(state.packs.filter(function (c) { return c !== remove.dataset.code; }));
+      return;
+    }
+    if (e.target.closest('#fb-add')) { togglePicker(); return; }
+    if (e.target.closest('#facet-clear')) { clearFacets(); return; }
+
+    var btn = e.target.closest('.facet');
+    if (!btn) return;
+    var list = facetList(btn.dataset.group);
+    var at = list.indexOf(btn.dataset.value);
+    if (at === -1) list.push(btn.dataset.value); else list.splice(at, 1);
+    btn.classList.toggle('on', at === -1);
+    btn.setAttribute('aria-pressed', at === -1 ? 'true' : 'false');
+    syncFilterCount();
+    applyFilters();
+  });
+
+  /* The picker stays open across picks so several packs can go in at once. */
+  pickerList.addEventListener('click', function (e) {
+    var item = e.target.closest('.pp-item');
+    if (item) togglePack(item.dataset.code);
+  });
+
+  pickerQ.addEventListener('input', function () {
+    filterPicker(pickerQ.value.trim().toLowerCase());
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !picker.hidden) closePicker();
+  });
+
+  document.addEventListener('pointerdown', function (e) {
+    if (picker.hidden) return;
+    if (e.target.closest('#pack-picker') || e.target.closest('#fb-add')) return;
+    closePicker();
+  });
+
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('a[href^="#/"]');
     if (link) rememberScroll();
   }, true);
 
+  window.addEventListener('resize', syncHeadHeight);
+  if (window.ResizeObserver) new ResizeObserver(syncHeadHeight).observe(head);
+
   window.addEventListener('hashchange', route);
 
   if (!location.hash) location.replace('#/');
+  syncHeadHeight();
   route();
 })();

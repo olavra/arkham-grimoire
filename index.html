@@ -19,26 +19,47 @@
 <div class="ambient" aria-hidden="true"></div>
 <div class="grid-overlay" aria-hidden="true"></div>
 
-<header class="topbar">
-  <a class="brand" href="#/">
-    <span class="logo"></span>
-    <span>Arkham<span class="slash"> // </span>Grimoire</span>
-  </a>
+<header class="site-head" id="site-head">
+  <div class="topbar">
+    <a class="brand" href="#/">
+      <span class="logo"></span>
+      <span>Arkham<span class="slash"> // </span>Grimoire</span>
+    </a>
 
-  <div class="topbar-tools">
-    <button type="button" class="btn-ghost toggle-replaced" id="toggle-replaced" hidden
-            aria-pressed="true" title="Deluxe boxes and Mythos Packs the Investigator / Campaign Expansions replaced">
-      <span class="tt-label">Superseded</span><span class="tt-n"></span>
-    </button>
-    <label class="search" id="search-wrap" hidden>
+    <div class="topbar-tools">
+      <a class="btn-ghost back-btn" id="back-btn" href="#/" hidden>
+        <span aria-hidden="true">←</span><span>Back</span>
+      </a>
+      <button type="button" class="btn-ghost toggle-replaced" id="toggle-replaced" hidden
+              aria-pressed="true" title="Deluxe boxes and Mythos Packs the Investigator / Campaign Expansions replaced">
+        <span class="tt-label">Superseded</span><span class="tt-n"></span>
+      </button>
+      <label class="search" id="search-wrap" hidden>
+        <span class="search-ico" aria-hidden="true">⌕</span>
+        <input type="search" id="search" placeholder="Filter cards…" autocomplete="off" spellcheck="false" aria-label="Filter cards">
+      </label>
+      <button type="button" class="btn-ghost fb-toggle" id="filters-toggle" hidden
+              aria-expanded="true" aria-controls="filterbar">
+        <span class="fb-ico" aria-hidden="true">≡</span><span class="fb-word">Filters</span><span class="fb-n" id="filters-n"></span>
+      </button>
+      <a class="btn-ghost" href="#/" id="home-btn">Packs</a>
+    </div>
+  </div>
+
+  <div class="filterbar" id="filterbar" hidden>
+    <div class="fb-groups" id="fb-groups"></div>
+  </div>
+
+  <!-- Sibling of .filterbar, not a child: the bar scrolls its own overflow,
+       which would clip a panel hanging off its bottom edge. -->
+  <div class="pack-picker" id="pack-picker" hidden>
+    <label class="pp-search">
       <span class="search-ico" aria-hidden="true">⌕</span>
-      <input type="search" id="search" placeholder="Filter cards…" autocomplete="off" spellcheck="false" aria-label="Filter cards">
+      <input type="search" id="pp-q" placeholder="Find a pack…" autocomplete="off" spellcheck="false" aria-label="Find a pack">
     </label>
-    <a class="btn-ghost" href="#/" id="home-btn">Packs</a>
+    <div class="pp-list" id="pp-list"></div>
   </div>
 </header>
-
-<nav class="breadcrumb" id="breadcrumb" hidden></nav>
 
 <main id="view" class="view" aria-live="polite"></main>
 
