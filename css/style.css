@@ -812,6 +812,7 @@ body.viewer-open{overflow:hidden}
 }
 .viewer-card.landscape{aspect-ratio:7/5;height:min(56vh,560px)}
 .viewer-card.grabbing{cursor:grabbing}
+.viewer-stage.panning,.viewer-stage.panning .viewer-card{cursor:all-scroll}
 @keyframes viewerPop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 
 /* The card is a zero-thickness sheet: the two faces are coplanar and
