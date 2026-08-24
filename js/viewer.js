@@ -44,6 +44,39 @@
 
   function clampX(v) { return Math.max(-90, Math.min(90, v)); }
 
+  function clampZoom(v) { return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, v)); }
+
+  /* Zoom about an arbitrary screen point, so whatever is under the pointer stays
+     under it. A point sits at local offset v from the untransformed centre C and
+     lands on screen at C + pan + zoom·v. Holding that landing spot at the cursor
+     P across a zoom change of k = zoom'/zoom rearranges to
+
+         pan' = d(1 - k) + k·pan,    d = P - C
+
+     C is recovered from the live box rather than assumed: scaling happens about
+     the centre, so the transformed centre is exactly C + pan. */
+  function zoomAt(nextZoom, px, py) {
+    if (!zoomEl) return;
+    var k = nextZoom / zoom;
+    if (k === 1) return;
+
+    var r = zoomEl.getBoundingClientRect();
+    var dx = px - (r.left + r.width / 2 - panX);
+    var dy = py - (r.top + r.height / 2 - panY);
+
+    panX = dx * (1 - k) + k * panX;
+    panY = dy * (1 - k) + k * panY;
+    zoom = nextZoom;
+
+    clampPan();
+    apply();
+  }
+
+  function stageCentre() {
+    var r = stage.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
   /* A card panned entirely off the stage is a card the user has to guess their
      way back to, so a sliver always stays put. Zooming out shrinks the ceiling,
      hence the re-clamp after every zoom rather than only while dragging. */
@@ -177,9 +210,10 @@
       var p = activePointers();
       var d = distance(p[0], p[1]);
       if (pinchDist > 0) {
-        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * (d / pinchDist)));
-        clampPan();
-        apply();
+        /* Anchored between the fingers — the touch reading of "zoom at the
+           pointer", and the reason a pinch doesn't drift off the detail. */
+        zoomAt(clampZoom(zoom * (d / pinchDist)),
+               (p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2);
       }
       pinchDist = d;
       return;
@@ -221,9 +255,14 @@
   function onWheel(e) {
     e.preventDefault();
     stopSpin();
-    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * (1 - e.deltaY * 0.0015)));
-    clampPan();
-    apply();
+    zoomAt(clampZoom(zoom * (1 - e.deltaY * 0.0015)), e.clientX, e.clientY);
+  }
+
+  /* The keyboard has no pointer to zoom towards, so it works off the middle of
+     the stage — whatever the user has centred stays centred. */
+  function zoomStep(k) {
+    var c = stageCentre();
+    zoomAt(clampZoom(zoom * k), c.x, c.y);
   }
 
   function onKey(e) {
@@ -233,8 +272,8 @@
       case 'ArrowRight': stopSpin(); ry += 10; apply(); e.preventDefault(); break;
       case 'ArrowUp':    stopSpin(); rx = clampX(rx + 10); apply(); e.preventDefault(); break;
       case 'ArrowDown':  stopSpin(); rx = clampX(rx - 10); apply(); e.preventDefault(); break;
-      case '+': case '=': zoom = Math.min(MAX_ZOOM, zoom * 1.15); apply(); break;
-      case '-': case '_': zoom = Math.max(MIN_ZOOM, zoom / 1.15); apply(); break;
+      case '+': case '=': zoomStep(1.15); break;
+      case '-': case '_': zoomStep(1 / 1.15); break;
       case 'f': case 'F': flip(); break;
       case 'r': case 'R': reset(); break;
       case 'Tab': trapTab(e); break;
