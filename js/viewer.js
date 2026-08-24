@@ -10,8 +10,6 @@
 
   var MIN_ZOOM = 0.35, MAX_ZOOM = 5;
 
-  var PAN_KEEP = 48;        // px of card that must stay over the stage
-
   var root = null;          // overlay element while open
   var card3d = null;
   var zoomEl = null;
@@ -77,14 +75,18 @@
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
 
-  /* A card panned entirely off the stage is a card the user has to guess their
-     way back to, so a sliver always stays put. Zooming out shrinks the ceiling,
-     hence the re-clamp after every zoom rather than only while dragging. */
+  /* Panning is only ever a way to reach what the stage cannot show, so the limit
+     on each axis is half the overflow. That ceiling shrinks with the card, which
+     is what walks the pan back to centre on the way out: every notch of zoom-out
+     leaves less overflow to hide in, and a card that fits is pinned dead centre
+     with nothing to chase. Also why this re-runs after zooming, not just while
+     dragging. Rotation is ignored — a tilted card only projects smaller, so the
+     limit errs towards holding it on screen. */
   function clampPan() {
     if (!stage || !card3d) return;
     var r = stage.getBoundingClientRect();
-    var maxX = Math.max(0, (r.width + card3d.offsetWidth * zoom) / 2 - PAN_KEEP);
-    var maxY = Math.max(0, (r.height + card3d.offsetHeight * zoom) / 2 - PAN_KEEP);
+    var maxX = Math.max(0, (card3d.offsetWidth * zoom - r.width) / 2);
+    var maxY = Math.max(0, (card3d.offsetHeight * zoom - r.height) / 2);
     panX = Math.max(-maxX, Math.min(maxX, panX));
     panY = Math.max(-maxY, Math.min(maxY, panY));
   }
@@ -294,6 +296,9 @@
     if (!card3d) return;
     card3d.style.setProperty('--w', card3d.offsetWidth + 'px');
     card3d.style.setProperty('--h', card3d.offsetHeight + 'px');
+    /* A narrower window leaves less overflow to pan into. */
+    clampPan();
+    apply();
   }
 
   /* ---------- open / close ---------- */
