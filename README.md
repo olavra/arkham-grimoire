@@ -74,6 +74,7 @@ centre screen as a real 3D object with thickness, and you can
 | Drag | Rotate on both axes (with a little momentum on release) |
 | Scroll / pinch | Zoom, 0.35× to 5× |
 | `F` or **Flip** | Turn to the other face |
+| `T` or **Rotate 90°** | Quarter turn in the card's own plane, shrinking to fit if it no longer does |
 | `R` or **Reset** | Back to square on at 1× |
 | Arrow keys | Nudge the rotation 10° at a time |
 | Double click | Reset |
@@ -108,9 +109,11 @@ The subtitle in the overlay says when a generic back is in use.
 
 | Route             | View                                                      |
 | ----------------- | --------------------------------------------------------- |
-| `#/`              | Hero + every pack, grouped by cycle, with an **All Cards** entry |
+| `#/`              | **Cards** — the complete pool (player + encounter), no pack filter |
+| `#/packs`         | **Packs** — every pack, grouped by chapter and cycle       |
 | `#/pack/{code}`   | Card grid for one pack — image, name, faction accent      |
-| `#/pack/_all`     | The complete pool (player + encounter cards), no pack filter |
+| `#/pack/_all`     | Alias for `#/`; an empty pack selection normalises back to `#/` |
+| `#/search/{q}`    | The card browser over the whole pool, query pre-applied    |
 | `#/card/{code}`   | Full card data: stats, text, flavor, reverse side, metadata |
 
 ## Notes on the API

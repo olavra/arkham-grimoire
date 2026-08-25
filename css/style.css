@@ -114,9 +114,10 @@ a{color:inherit;text-decoration:none}
 }
 .topbar{
   height:var(--topbar-h);
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:0 clamp(18px,4vw,42px);
 }
+.topbar-nav{display:flex;align-items:center;gap:14px;min-width:0}
 .brand{
   display:flex;align-items:center;gap:11px;
   font-weight:600;font-size:16px;letter-spacing:-.01em;white-space:nowrap;
@@ -162,17 +163,12 @@ a{color:inherit;text-decoration:none}
 }
 .btn-ghost:hover{background:rgba(255,255,255,.12);transform:translateY(-1px)}
 
-/* Superseded-packs switch. Off reads as struck through — the packs are gone. */
-.toggle-replaced{color:var(--ink-3)}
-.toggle-replaced .tt-label{text-decoration:line-through;text-decoration-color:var(--ink-4)}
-.toggle-replaced .tt-n{
-  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--ink-4);
+/* Cards / Packs are the two top-level sections; the lit one says where you are. */
+.nav-btn.on{
+  background:rgba(99,102,241,.18);
+  border-color:rgba(99,102,241,.42);
+  color:#fff;
 }
-.toggle-replaced.on{
-  background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.6);color:var(--ink);
-}
-.toggle-replaced.on .tt-label{text-decoration:none}
-.toggle-replaced.on .tt-n{color:var(--indigo-soft)}
 
 .back-btn{gap:9px}
 .back-btn span:first-child{color:var(--indigo-soft);font-size:15px;line-height:1}
@@ -195,7 +191,11 @@ a{color:inherit;text-decoration:none}
 }
 .filterbar.busy{opacity:.5;pointer-events:none}
 
-.fb-groups{display:flex;flex-wrap:wrap;align-items:center;gap:9px 22px;padding-top:13px}
+/* One row per line of the bar. Packs and Level share the first; Type and Class
+   each own one, so a long chip list never reflows around a neighbour. */
+.fb-groups{display:flex;flex-direction:column;gap:10px;padding-top:13px}
+.fb-row{display:flex;flex-wrap:wrap;align-items:center;gap:9px 22px}
+.fb-row:empty{display:none}          /* a facet group with nothing to offer */
 .fb-group{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .fb-tail{margin-left:auto;gap:16px}
 .fb-label{
@@ -211,10 +211,6 @@ a{color:inherit;text-decoration:none}
   background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.5);
   border-radius:100px;padding:4px 5px 4px 13px;
   font-family:var(--font-body);font-size:12.5px;font-weight:500;color:var(--ink);
-}
-.pack-pill.all{
-  background:rgba(255,255,255,.05);border-color:var(--line);
-  color:var(--ink-3);padding:5px 13px;
 }
 .pp-x{
   width:18px;height:18px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
@@ -246,10 +242,13 @@ a{color:inherit;text-decoration:none}
   backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
   overflow:hidden;
 }
-.pp-search{
-  display:flex;align-items:center;gap:10px;flex-shrink:0;
-  padding:13px 18px;border-bottom:1px solid var(--line-2);
+.pp-top{
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+  padding:11px 14px 11px 18px;border-bottom:1px solid var(--line-2);
 }
+.pp-search{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.pp-tools{flex-shrink:0}
+.pp-tools .facet{padding:5px 11px;font-size:12.5px}
 .pp-search input{
   background:none;border:none;outline:none;color:var(--ink);width:100%;
   font-family:var(--font-body);font-size:14px;
@@ -423,15 +422,6 @@ a{color:inherit;text-decoration:none}
 .pack-card .pc-arr{margin-left:auto;color:var(--ink-4);transition:transform .25s,color .25s}
 .pack-card:hover .pc-arr{color:var(--indigo-soft);transform:translateX(4px)}
 
-.pack-card.featured{
-  grid-column:1/-1;
-  background:linear-gradient(120deg,rgba(99,102,241,.22),rgba(236,72,153,.1) 60%,rgba(255,255,255,.02));
-  border-color:rgba(99,102,241,.34);
-}
-.pack-card.featured .pc-body{padding:30px 32px}
-.pack-card.featured .pc-name{font-size:clamp(24px,3vw,36px);font-weight:500;letter-spacing:-.03em}
-.pack-card.featured .pc-count{color:var(--indigo-soft)}
-
 .chip{
   font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
   background:rgba(255,255,255,.06);border:1px solid var(--line);
@@ -479,6 +469,16 @@ a{color:inherit;text-decoration:none}
 .facet-neutral.on .n {color:#c8cedb}
 .facet-mythos.on .n  {color:var(--f-mythos)}
 
+/* Superseded-packs switch — a facet like any other, except that "off" reads as
+   struck through: the packs it covers are gone from the list. */
+.toggle-replaced .tt-label{text-decoration:line-through;text-decoration-color:var(--ink-4)}
+.toggle-replaced .tt-n{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
+  color:var(--ink-4);transition:color .22s;
+}
+.toggle-replaced.on .tt-label{text-decoration:none}
+.toggle-replaced.on .tt-n{color:var(--indigo-soft)}
+
 .facet-clear{
   align-self:flex-start;background:none;border:none;cursor:pointer;
   font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;
@@ -494,10 +494,22 @@ a{color:inherit;text-decoration:none}
   grid-template-columns:repeat(auto-fill,minmax(178px,1fr));
 }
 .card-tile{
+  position:relative;
   display:flex;flex-direction:column;gap:10px;
   border-radius:var(--r-md);padding:10px 10px 14px;
   border:1px solid transparent;
   transition:transform .35s var(--ee),background .35s,border-color .35s;
+}
+/* A hidden card is the reverse of another card. It stays in the grid — it is
+   still a face you can look at — but it is not offered as a peer of the rest. */
+.card-tile.is-hidden .tile-img{opacity:.72;transition:opacity .35s}
+.card-tile.is-hidden:hover .tile-img{opacity:1}
+.tile-flag{
+  position:absolute;top:16px;left:16px;z-index:2;
+  font-family:var(--font-mono);font-size:8.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:#f0b429;
+  padding:3px 8px;border-radius:100px;
+  border:1px solid rgba(240,180,41,.5);background:rgba(12,10,4,.78);
 }
 .card-tile:hover{
   transform:translateY(-5px);
@@ -517,13 +529,13 @@ a{color:inherit;text-decoration:none}
   overflow:hidden;border:1px solid var(--line-2);background:rgba(255,255,255,.04);
 }
 
-/* Card corners, everywhere a card is shown: 2.9% of the card's width, matched
+/* Card corners, everywhere a card is shown: 4.4% of the card's width, matched
    on the vertical axis so the curve stays circular. Portrait art is 5:7,
    landscape 7:5. Same ratio the 3D viewer derives from --w. */
 .tile-img,
-.detail-art .frame{border-radius:2.9% / 2.07%}
+.detail-art .frame{border-radius:4.4% / 3.14%}
 .tile-img.landscape,
-.detail-art .frame.landscape{border-radius:2.9% / 4.06%}
+.detail-art .frame.landscape{border-radius:4.4% / 6.16%}
 .tile-img .noimg{
   font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;
   text-transform:uppercase;color:var(--ink-4);padding:14px;text-align:center;
@@ -565,17 +577,56 @@ a{color:inherit;text-decoration:none}
 
 .c3d-face{
   position:absolute;inset:0;overflow:hidden;
-  border-radius:2.9% / 2.07%;
+  border-radius:4.4% / 3.14%;
   border:1px solid var(--line-2);background:rgba(255,255,255,.04);
   backface-visibility:hidden;-webkit-backface-visibility:hidden;
   box-shadow:0 16px 34px rgba(0,0,0,.45);
 }
-.c3d-stage.landscape .c3d-face{border-radius:2.9% / 4.06%}
+.c3d-stage.landscape .c3d-face{border-radius:4.4% / 6.16%}
 .c3d-face img{
   width:100%;height:100%;object-fit:cover;display:block;
   user-select:none;-webkit-user-drag:none;
 }
-.c3d-back{transform:rotateY(180deg)}
+/* A landscape card ArkhamDB stores as an upright scan — the card lying on its
+   side in a portrait file. Card3D tags the image once it has measured it; a
+   quarter turn clockwise puts it back the way it is printed.
+
+   The face is 7:5, so before the turn the image wants to be 5/7 of the face's
+   width — the face's height — and 5:7 itself, which is the face's width once
+   it has swung round. */
+.c3d-face img.sideways,
+.detail-art .frame img.sideways,   /* out-specifies the frame's own width:100% */
+.v-face img.sideways{
+  position:absolute;top:50%;left:50%;
+  width:calc(100% * 5 / 7);height:auto;aspect-ratio:5 / 7;
+  transform:translate(-50%,-50%) rotate(var(--spin,90deg));
+}
+/* The mirror case, and the one a linked reverse brings: a landscape scan on the
+   back of a portrait card — the investigator printed on the back of an asset.
+   Same quarter turn, with the 5:7 swapped for 7:5. */
+.c3d-face img.sideways.wide,
+.detail-art .frame img.sideways.wide,
+.v-face img.sideways.wide{width:calc(100% * 7 / 5);aspect-ratio:7 / 5}
+/* A back face is mirrored, which reverses the sense of any turn inside it: the
+   same quarter turn that rights the front lands the back upside down. The
+   direction rides on an inherited custom property rather than a second
+   transform rule, so it cannot lose a specificity race with the one above. */
+.c3d-back{transform:rotateY(180deg);--spin:-90deg}
+
+/* A reverse ArkhamDB knows about but ships no scan of. Deliberately not the
+   generic deck back — that would read as "nothing is printed here". */
+.c3d-blank,.v-blank{
+  display:grid;place-items:center;padding:8%;
+  background:
+    radial-gradient(120% 90% at 50% 0,rgba(99,102,241,.14),transparent 70%),
+    #0d1220;
+}
+.face-blank{
+  display:flex;flex-direction:column;gap:.8em;text-align:center;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ink-4);line-height:1.5;
+}
+.face-blank b{font-weight:500;letter-spacing:.14em;color:var(--ink-3)}
 
 /* specular sheen that follows the pointer, clipped by the face */
 .c3d-glare{
@@ -649,6 +700,10 @@ a{color:inherit;text-decoration:none}
   border-radius:100px;padding:6px 14px;border:1px solid currentColor;opacity:.95;
 }
 .type-line .badge.plain{color:var(--ink-3);border-color:var(--line)}
+/* not a card in its own right — see .note-hidden */
+.type-line .badge.warn{color:#f0b429;border-color:rgba(240,180,41,.55);background:rgba(240,180,41,.09)}
+.type-line a.badge{text-decoration:none}
+.type-line a.badge:hover{color:var(--ink-1);border-color:var(--ink-4)}
 .type-line .badge{display:inline-flex;align-items:center;gap:7px}
 .type-line .badge-ico{font-size:14px;letter-spacing:0}
 
@@ -710,8 +765,20 @@ a{color:inherit;text-decoration:none}
   border-radius:0 var(--r-sm) var(--r-sm) 0;
 }
 
+/* Cards ArkhamDB files as their own record but that are only ever the reverse
+   of another card. Amber rather than red: it is a fact about the card, not a
+   fault. */
+.note{
+  display:block;padding:14px 18px;border-radius:var(--r-sm);
+  font-family:var(--font-sans);font-size:13.5px;line-height:1.6;color:var(--ink-2);
+}
+.note strong{color:#f0b429;font-weight:600}
+.note-hidden{border:1px solid rgba(240,180,41,.3);background:rgba(240,180,41,.06)}
+.note-hidden a{color:var(--ink-1)}
+
 /* back side block */
 .backside{display:flex;flex-direction:column;gap:16px;padding-top:6px}
+.backside .type-line{margin-top:0}
 .backside h3,.meta h3{
   font-family:var(--font-mono);font-size:10px;letter-spacing:.25em;text-transform:uppercase;
   color:var(--ink-3);font-weight:400;
@@ -749,6 +816,16 @@ a{color:inherit;text-decoration:none}
   padding:.2em .45em;margin:0 .12em;border-radius:5px;
   background:rgba(255,255,255,.09);border:1px solid var(--line);
   color:var(--ink-2);letter-spacing:.06em;white-space:nowrap;text-shadow:none;
+}
+/* [[Trait]] references — the same chip, tinted like the trait line under the
+   card title. The brackets are ArkhamDB's markup, so the chip replaces them
+   rather than sitting inside them. */
+.ah-trait{
+  display:inline-block;font-family:var(--font-mono);font-weight:700;
+  font-size:.72em;line-height:1;vertical-align:.06em;
+  padding:.2em .45em;margin:0 .12em;border-radius:5px;
+  background:rgba(255,255,255,.06);border:1px solid var(--line);
+  color:var(--pink-soft);letter-spacing:.06em;white-space:nowrap;text-shadow:none;
 }
 
 /* Health and sanity have no glyph in the font, so they come from the standalone
@@ -836,7 +913,7 @@ body.viewer-open{overflow:hidden}
   /* --w/--h are written by the viewer on open and resize; the corner radius is
      derived from them so it stays proportional in both orientations. */
   --w:0px;--h:0px;
-  --radius:calc(var(--w) * 0.029);
+  --radius:calc(var(--w) * 0.044);
   position:relative;
   height:min(70vh,760px);aspect-ratio:5/7;
   transform-style:preserve-3d;
@@ -860,7 +937,7 @@ body.viewer-open{overflow:hidden}
 }
 .v-face img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none}
 .v-front{transform:translateZ(0)}
-.v-back{transform:translateZ(0) rotateY(180deg)}
+.v-back{transform:translateZ(0) rotateY(180deg);--spin:-90deg}
 
 .viewer-controls{
   display:flex;align-items:center;justify-content:center;gap:12px;
@@ -896,6 +973,7 @@ body.viewer-open{overflow:hidden}
   align-items:center;gap:16px;
 }
 .state .mono-tag{letter-spacing:.3em}
+.state .msg{font-family:var(--font-body);font-size:14px;color:var(--ink-3);max-width:56ch}
 .spinner{
   width:34px;height:34px;border-radius:50%;
   border:2px solid var(--line);border-top-color:var(--indigo-soft);
@@ -903,7 +981,6 @@ body.viewer-open{overflow:hidden}
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .state.error{color:var(--pink-soft)}
-.state.error .msg{font-family:var(--font-body);font-size:14px;color:var(--ink-3);max-width:56ch}
 
 .sentinel{height:1px}
 
@@ -917,9 +994,10 @@ body.viewer-open{overflow:hidden}
   .detail-art{position:static;max-width:400px}
 }
 @media (max-width:860px){
-  /* Buttons before search: once the bar runs out of room the field gives up
-     its width rather than shoving Filters and Packs off the edge. */
+  /* Search gives up its width first: shrinking the field keeps the brand and
+     the Filters button in place rather than shoving them off the edge. */
   .topbar{gap:12px}
+  .topbar-nav{gap:10px;flex:0 1 auto}
   .topbar-tools{flex:1;min-width:0;justify-content:flex-end}
   .search{flex:0 1 auto;min-width:0;padding:0 13px}
   .search input{width:100%;min-width:0}
@@ -928,9 +1006,6 @@ body.viewer-open{overflow:hidden}
 @media (max-width:640px){
   .brand span:not(.logo){font-size:14px}
   .btn-ghost{padding:0 14px}
-  /* The count alone still carries the switch once the topbar runs out of room. */
-  .toggle-replaced .tt-label{display:none}
-  .toggle-replaced{padding:0 12px}
   .back-btn span:last-child,.fb-toggle .fb-word{display:none}
   .card-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
   .fb-groups{gap:8px 14px}

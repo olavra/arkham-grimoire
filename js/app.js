@@ -6,22 +6,23 @@
   var head = document.getElementById('site-head');
   var searchWrap = document.getElementById('search-wrap');
   var searchInput = document.getElementById('search');
-  var replacedBtn = document.getElementById('toggle-replaced');
   var backBtn = document.getElementById('back-btn');
   var filterbar = document.getElementById('filterbar');
   var fbGroups = document.getElementById('fb-groups');
   var filtersBtn = document.getElementById('filters-toggle');
   var filtersN = document.getElementById('filters-n');
+  var cardsBtn = document.getElementById('cards-btn');
+  var packsBtn = document.getElementById('packs-btn');
   var picker = document.getElementById('pack-picker');
   var pickerQ = document.getElementById('pp-q');
   var pickerList = document.getElementById('pp-list');
+  var pickerTools = document.getElementById('pp-tools');
 
   var esc = Markup.escapeHtml;
   var text = Markup.renderText;
   var facClass = Markup.factionClass;
 
   var BATCH = 60;
-  var LANDSCAPE = ['investigator', 'act', 'agenda', 'scenario'];
 
   /* Cycle names, keyed by cycle_position. Packs only carry the position, and
      /api/public/cycles/ is returning 500, so these mirror the upstream
@@ -90,7 +91,7 @@
     observer: null
   };
   var scrollMemory = Object.create(null);
-  var filterMemory = Object.create(null);   // pack key -> {query, types, factions, levels}
+  var filterMemory = Object.create(null);   // pack key -> {types, factions, levels}
 
   var packIndex = Object.create(null);      // pack code -> pack
   var packList = [];                        // packs in catalogue order
@@ -101,8 +102,14 @@
   var lastGrid = null;                      // last card-browser hash, for the back button
   var filtersOpen = true;
 
+  /* The search field is global: it always queries the whole card pool from its
+     own route, whatever page it was typed on. This remembers where to drop the
+     user back once the box is emptied. */
+  var preSearchHash = '#/';
+
   /* The 43 packs the Investigator/Campaign Expansions superseded. Shown by
-     default; the topbar toggle drops them for a collection-shaped catalogue. */
+     default; the Superseded switch in the pack filters drops them for a
+     collection-shaped catalogue. */
   var showReplaced = true;
   var homeData = null;                      // {packs, cycles}; lets the toggle repaint without refetching
   /* chapter/cycle -> true. Cycle positions are unique across chapters, so one
@@ -114,6 +121,17 @@
 
   function html(el, markup) { el.innerHTML = markup; }
 
+  /* The index is the card browser over the whole pool; the pack catalogue is a
+     section of its own under #/packs. */
+  var PACKS_HASH = '#/packs';
+
+  function routeParts() {
+    return (location.hash || '#/').replace(/^#\/?/, '').split('/').filter(Boolean);
+  }
+  function isHome() { return routeParts()[0] === 'packs'; }
+  function isSearch() { return routeParts()[0] === 'search'; }
+  function searchHash(q) { return '#/search/' + encodeURIComponent(q); }
+
   function loading(label) {
     html(view, '<div class="state"><div class="spinner"></div>' +
       '<div class="mono-tag">' + esc(label) + '</div></div>');
@@ -124,19 +142,22 @@
       '<div class="state error">' +
         '<div class="mono-tag">Signal lost</div>' +
         '<div class="msg">' + esc(err && err.message ? err.message : String(err)) + '</div>' +
-        '<a class="btn-ghost" href="#/">Back to packs</a>' +
+        '<a class="btn-ghost" href="' + PACKS_HASH + '">Back to packs</a>' +
       '</div>');
-  }
-
-  function showSearch(show, placeholder) {
-    searchWrap.hidden = !show;
-    if (show) searchInput.placeholder = placeholder || 'Filter cards…';
-    else searchInput.value = '';
   }
 
   function showBack(show, href) {
     backBtn.hidden = !show;
-    if (show) backBtn.setAttribute('href', href || '#/');
+    if (show) backBtn.setAttribute('href', href || PACKS_HASH);
+  }
+
+  /* Cards and Packs are the two top-level sections. Everything that browses
+     cards — the index, a pack's grid, a card page, a search — lights Cards;
+     only the catalogue itself lights Packs. */
+  function syncNav() {
+    var packs = isHome();
+    cardsBtn.classList.toggle('on', !packs);
+    packsBtn.classList.toggle('on', packs);
   }
 
   /* The header is fixed, so the view has to reserve its height — and that
@@ -152,16 +173,34 @@
     syncHeadHeight();
   }
 
-  /* The superseded-packs toggle lives in the topbar, so it outlives the view
-     re-renders — it only needs showing on the home route. */
-  function showReplacedToggle(show) {
-    replacedBtn.hidden = !show;
-    if (!show) return;
-    replacedBtn.classList.toggle('on', showReplaced);
-    replacedBtn.setAttribute('aria-pressed', showReplaced ? 'true' : 'false');
+  /* The superseded-packs switch is a pack filter, so it renders wherever packs
+     are filtered: the home filter bar, and the pack picker in the browser. Both
+     copies drive the same flag, hence one markup helper and one delegated
+     click handler keyed on the class. */
+  function replacedCount() {
+    return packList.reduce(function (n, p) { return n + (p.replaced === true ? 1 : 0); }, 0);
   }
 
-  function isLandscape(card) { return LANDSCAPE.indexOf(card.type_code) !== -1; }
+  function replacedChipHtml() {
+    var n = replacedCount();
+    return '<button type="button" class="facet toggle-replaced' + (showReplaced ? ' on' : '') +
+      '" aria-pressed="' + (showReplaced ? 'true' : 'false') +
+      '" title="Deluxe boxes and Mythos Packs the Investigator / Campaign Expansions replaced">' +
+      '<span class="tt-label">Superseded</span>' +
+      (n ? '<span class="tt-n">' + n + '</span>' : '') +
+    '</button>';
+  }
+
+  function toggleReplaced() {
+    showReplaced = !showReplaced;
+    if (isHome() && homeData) paintHome();                   // repaints its own chip
+    if (!picker.hidden) {
+      html(pickerTools, replacedChipHtml());
+      filterPicker(pickerQ.value.trim().toLowerCase());
+    }
+  }
+
+  var isLandscape = Card3D.isLandscape;
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -188,19 +227,18 @@
 
   function renderHome() {
     var token = ++state.token;
-    showSearch(false);
     showBack(false);
     showFilters(false);
     loading('Consulting the index');
 
-    if (homeData) { paintHome(); restoreScroll('#/'); return; }
+    if (homeData) { paintHome(); restoreScroll(PACKS_HASH); return; }
 
     Promise.all([API.getPacks(), API.getCycles()]).then(function (res) {
       if (token !== state.token) return;
       homeData = { packs: res[0], cycles: res[1] };
       indexPacks(res[0]);
       paintHome();
-      restoreScroll('#/');
+      restoreScroll(PACKS_HASH);
     }).catch(function (err) { if (token === state.token) failure(err); });
   }
 
@@ -209,8 +247,6 @@
   function paintHome() {
     var all = homeData.packs;
     var packs = showReplaced ? all : all.filter(function (p) { return p.replaced !== true; });
-    var replacedCount = all.reduce(function (n, p) { return n + (p.replaced === true ? 1 : 0); }, 0);
-    var total = packs.reduce(function (n, p) { return n + (p.known || 0); }, 0);
 
     /* chapter -> cycle_position -> packs. Packs arrive sorted by cycle_position
        then position, so insertion order is already display order. */
@@ -231,27 +267,9 @@
     });
     chapters.sort(function (a, b) { return a - b; });
 
-    var out = '' +
-      '<div class="pack-grid" style="margin-bottom:8px">' +
-        '<a class="pack-card featured glass-card" href="#/pack/_all">' +
-          '<div class="pc-body">' +
-            '<div class="pc-top">' +
-              '<div>' +
-                '<div class="pc-name">All Cards</div>' +
-                '<p class="body-md" style="margin-top:8px;max-width:52ch">' +
-                  'The complete pool — player cards and encounter cards, no pack filter. ' +
-                  'Large download; give it a moment.</p>' +
-              '</div>' +
-              '<span class="pc-code">/ALL</span>' +
-            '</div>' +
-            '<div class="pc-foot">' +
-              '<span class="pc-count">' + packs.length + ' packs · ' +
-                total.toLocaleString() + ' cards</span>' +
-              '<span class="pc-arr">→</span>' +
-            '</div>' +
-          '</div>' +
-        '</a>' +
-      '</div>';
+    /* No "All Cards" entry here — the whole pool is the index, reachable from
+       the Cards section in the topbar. */
+    var out = '';
 
     chapters.forEach(function (ch) {
       var bucket = byChapter[ch];
@@ -296,8 +314,8 @@
 
     html(view, out);
 
-    replacedBtn.querySelector('.tt-n').textContent = replacedCount;
-    showReplacedToggle(true);
+    renderHomeFilterbar(packs.length, all.length);
+    showFilters(true);
 
     /* `toggle` does not bubble, so each disclosure needs its own listener. */
     view.querySelectorAll('.chapter').forEach(function (det) {
@@ -354,6 +372,10 @@
      a pre-filled version of the pack filter the card browser exposes. */
   function packKey(codes) { return codes.length ? codes.join(',') : '_all'; }
 
+  /* An empty pack selection is the index, not #/pack/_all — that route still
+     resolves, it just isn't the address the browser writes back. */
+  function gridHash(codes) { return codes.length ? '#/pack/' + packKey(codes) : '#/'; }
+
   function parsePacks(spec) {
     var seen = Object.create(null);
     return spec.split(',').filter(function (c) {
@@ -386,14 +408,23 @@
   }
 
   function renderPack(spec) {
-    var token = ++state.token;
-    var codes = parsePacks(spec);
+    renderBrowser(parsePacks(spec), '');
+  }
 
-    showSearch(false);
+  /* The global search is the same card browser over the whole pool, opened with
+     the query already applied — hence one renderer for both routes. */
+  function renderSearch(q) {
+    renderBrowser([], q);
+  }
+
+  function renderBrowser(codes, query) {
+    var token = ++state.token;
+
     showBack(false);
-    showReplacedToggle(false);
     showFilters(false);
-    loading(codes.length ? 'Opening the pack' : 'Gathering the whole collection');
+    loading(query ? 'Searching the collection'
+          : codes.length ? 'Opening the pack'
+          : 'Gathering the whole collection');
 
     Promise.all([API.getPacks(), loadCards(codes)]).then(function (res) {
       if (token !== state.token) return;
@@ -404,10 +435,14 @@
       state.shown = 0;
 
       /* Restore whatever was selected last time this pack set was open, so
-         opening a card and coming back doesn't wipe the filters. */
-      var saved = filterMemory[packKey(codes)] ||
-                  { query: '', types: [], factions: [], levels: [] };
-      state.query = saved.query;
+         opening a card and coming back doesn't wipe the filters. The search
+         route is deliberately exempt: it shares the empty pack key with
+         #/pack/_all, and a new search should open on the whole pool rather
+         than inherit chips from the last one. The query is likewise not part
+         of a pack's memory — it belongs to the search route. */
+      var saved = (!isSearch() && filterMemory[packKey(codes)]) ||
+                  { types: [], factions: [], levels: [] };
+      state.query = query;
       state.types = saved.types.slice();
       state.factions = saved.factions.slice();
       state.levels = saved.levels.slice();
@@ -417,8 +452,6 @@
         '<div class="sentinel" id="sentinel"></div>' +
         '<div id="grid-empty"></div>');
 
-      showSearch(true, 'Filter ' + state.cards.length + ' cards…');
-      searchInput.value = state.query;
       buildPicker();
       renderFilterbar();
       showFilters(true);
@@ -443,8 +476,12 @@
 
     var token = ++state.token;
     state.packs = codes;
-    lastHash = lastGrid = '#/pack/' + packKey(codes);
-    history.replaceState(null, '', lastHash);
+    /* On the search route the term owns the URL, so narrowing by pack there is
+       a transient refinement of the results rather than a new address. */
+    if (!isSearch()) {
+      lastHash = lastGrid = gridHash(codes);
+      history.replaceState(null, '', lastHash);
+    }
 
     renderFilterbar();               // the pills answer immediately
     filterbar.classList.add('busy');
@@ -453,7 +490,6 @@
       if (token !== state.token) return;
       filterbar.classList.remove('busy');
       state.cards = cards;
-      searchInput.placeholder = 'Filter ' + cards.length + ' cards…';
       pruneFilters();
       renderFilterbar();
       applyFilters();
@@ -550,14 +586,12 @@
   }
 
   function packGroupHtml() {
-    var pills = state.packs.length
-      ? state.packs.map(function (code) {
-          var name = packName(code);
-          return '<span class="pack-pill">' + esc(name) +
-            '<button type="button" class="pp-x" data-code="' + esc(code) + '"' +
-            ' aria-label="Remove ' + esc(name) + '">×</button></span>';
-        }).join('')
-      : '<span class="pack-pill all">All packs</span>';
+    var pills = state.packs.map(function (code) {
+      var name = packName(code);
+      return '<span class="pack-pill">' + esc(name) +
+        '<button type="button" class="pp-x" data-code="' + esc(code) + '"' +
+        ' aria-label="Remove ' + esc(name) + '">×</button></span>';
+    }).join('');
 
     return '' +
       '<div class="fb-group fb-packs">' +
@@ -567,18 +601,51 @@
       '</div>';
   }
 
+  /* The home page filters packs rather than cards, so it fills the same bar
+     with the only pack filter it has — keeping Filters in the topbar on every
+     route instead of appearing halfway through the app. */
+  function renderHomeFilterbar(shown, total) {
+    html(fbGroups,
+      '<div class="fb-row">' +
+        '<div class="fb-group fb-packs">' +
+          '<span class="fb-label">Packs</span>' +
+          replacedChipHtml() +
+        '</div>' +
+        '<div class="fb-group fb-tail">' +
+          '<span class="chip" id="count-chip">' +
+            (shown === total ? total + ' packs' : shown + ' of ' + total + ' packs') +
+          '</span>' +
+        '</div>' +
+      '</div>');
+
+    /* Hiding the superseded packs is the one active filter this route has. */
+    filtersN.textContent = showReplaced ? '' : '1';
+    filtersBtn.classList.toggle('on', !showReplaced);
+    syncHeadHeight();
+  }
+
+  /* Packs and Level share the first row — both are short, and the pack pills
+     need somewhere to grow. Type and Class each keep a row of their own: they
+     run to a dozen chips and reflowing them around a neighbour makes the bar
+     jump every time the selection changes. */
   function renderFilterbar() {
     var cards = state.cards;
     html(fbGroups,
-      packGroupHtml() +
-      facetGroup('Level', 'level', levelFacets(cards), state.levels, false) +
-      facetGroup('Type', 'type',
-        facetsOf(cards, 'type_code', 'type_name', TYPE_ORDER), state.types, false) +
-      facetGroup('Class', 'faction',
-        facetsOf(cards, 'faction_code', 'faction_name', FACTION_ORDER), state.factions, true) +
-      '<div class="fb-group fb-tail">' +
-        '<span class="chip" id="count-chip">' + cards.length + ' cards</span>' +
-        '<button type="button" class="facet-clear" id="facet-clear" hidden>Clear filters</button>' +
+      '<div class="fb-row">' +
+        packGroupHtml() +
+        facetGroup('Level', 'level', levelFacets(cards), state.levels, false) +
+        '<div class="fb-group fb-tail">' +
+          '<span class="chip" id="count-chip">' + cards.length + ' cards</span>' +
+          '<button type="button" class="facet-clear" id="facet-clear" hidden>Clear filters</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="fb-row">' +
+        facetGroup('Type', 'type',
+          facetsOf(cards, 'type_code', 'type_name', TYPE_ORDER), state.types, false) +
+      '</div>' +
+      '<div class="fb-row">' +
+        facetGroup('Class', 'faction',
+          facetsOf(cards, 'faction_code', 'faction_name', FACTION_ORDER), state.factions, true) +
       '</div>');
 
     markPicked();
@@ -636,6 +703,7 @@
           }), homeData && homeData.cycles)) + '</div>';
       }
       out += '<button type="button" class="pp-item" data-code="' + esc(p.code) + '"' +
+        (p.replaced === true ? ' data-replaced="1"' : '') +
         ' data-name="' + esc(p.name.toLowerCase() + ' ' + p.code) + '">' +
         '<span class="pp-tick" aria-hidden="true">✓</span>' +
         '<span class="pp-name">' + esc(p.name) + '</span>' +
@@ -658,7 +726,10 @@
     var current = null;
     pickerList.querySelectorAll('.pp-head,.pp-item').forEach(function (el) {
       if (el.classList.contains('pp-head')) { current = el; groups[el.dataset.cycle] = false; return; }
-      var hit = !q || el.dataset.name.indexOf(q) !== -1;
+      /* An already-picked pack stays listed even when superseded ones are
+         hidden — otherwise there is no row left to unpick it from. */
+      var hit = (!q || el.dataset.name.indexOf(q) !== -1) &&
+                (showReplaced || el.dataset.replaced !== '1' || el.classList.contains('on'));
       el.hidden = !hit;
       if (hit && current) groups[current.dataset.cycle] = true;
     });
@@ -671,6 +742,7 @@
     picker.hidden = false;
     var add = document.getElementById('fb-add');
     if (add) add.setAttribute('aria-expanded', 'true');
+    html(pickerTools, replacedChipHtml());
     pickerQ.value = '';
     filterPicker('');
     pickerQ.focus();
@@ -701,12 +773,13 @@
     var grid = document.getElementById('card-grid');
     if (!grid) return;
 
-    filterMemory[packKey(state.packs)] = {
-      query: state.query,
-      types: state.types.slice(),
-      factions: state.factions.slice(),
-      levels: state.levels.slice()
-    };
+    if (!isSearch()) {
+      filterMemory[packKey(state.packs)] = {
+        types: state.types.slice(),
+        factions: state.factions.slice(),
+        levels: state.levels.slice()
+      };
+    }
 
     state.filtered = state.cards.filter(passes);
     state.shown = 0;
@@ -759,9 +832,17 @@
       ? Markup.iconHtml(card.faction_code, fac, card.faction_name, 'tile-fac')
       : '<span class="fac fac-' + fac + '" title="' + esc(card.faction_name || 'Neutral') + '"></span>';
 
+    /* A hidden card is the reverse of another card, not something you can draw
+       or build with — the grid says so rather than showing it as a peer. */
+    var flag = Faces.isHidden(card)
+      ? '<span class="tile-flag" title="The reverse of another card — never ' +
+        'drawn or added to a deck on its own">Hidden</span>'
+      : '';
+
     return '' +
-      '<a class="card-tile" href="#/card/' + esc(card.code) + '">' +
-        art +
+      '<a class="card-tile' + (Faces.isHidden(card) ? ' is-hidden' : '') +
+        '" href="#/card/' + esc(card.code) + '">' +
+        art + flag +
         '<div class="tile-name">' +
           facMark +
           '<span>' + esc(card.name) + '</span>' +
@@ -788,8 +869,6 @@
 
   function renderCard(code) {
     var token = ++state.token;
-    showSearch(false);
-    showReplacedToggle(false);
     showFilters(false);
     /* Whatever grid we came from, filters and all — falling back to the card's
        own pack for a cold link straight into a card. */
@@ -1048,6 +1127,60 @@
     });
   }
 
+  /* What is printed on the other side.
+
+     A `back_text`/`back_flavor` reverse is a second half of the same record and
+     gets a paragraph. A linked reverse is a whole card — its own type, traits,
+     stats and text — so it gets the same treatment the front does, and a link
+     to its own page for the card data. A card can carry both; both are shown. */
+  function reverseBlock(card) {
+    var out = '';
+    var lc = Faces.linked(card);
+
+    if (lc) {
+      var stats = statsFor(lc);
+      out += '' +
+        '<div class="backside">' +
+          '<h3>Reverse — ' + esc(lc.name) + '</h3>' +
+          '<div class="type-line">' +
+            '<span class="badge plain">' + esc(lc.type_name) + '</span>' +
+            (lc.subname ? '<span class="badge plain">' + esc(lc.subname) + '</span>' : '') +
+            '<a class="badge plain" href="#/card/' + esc(lc.code) + '">' +
+              esc(lc.code) + ' ↗</a>' +
+          '</div>' +
+          (lc.traits ? '<div class="traits">' + esc(lc.traits) + '</div>' : '') +
+          (stats ? '<div class="stats">' + stats + '</div>' : '') +
+          skillIconsHtml(lc) +
+          (lc.text ? '<div class="textbox">' + text(lc.text) + '</div>' : '') +
+          (lc.flavor ? '<div class="flavor">' + text(lc.flavor) + '</div>' : '') +
+        '</div>';
+    }
+
+    if (card.back_text || card.back_flavor || card.back_name) {
+      out += '' +
+        '<div class="backside">' +
+          '<h3>Reverse — ' + esc(card.back_name || card.name) + '</h3>' +
+          (card.back_text ? '<div class="textbox">' + text(card.back_text) + '</div>' : '') +
+          (card.back_flavor ? '<div class="flavor">' + text(card.back_flavor) + '</div>' : '') +
+        '</div>';
+    }
+
+    return out;
+  }
+
+  /* A hidden card is a reverse ArkhamDB happens to file separately, so the page
+     leads with what it actually is. It does not name the card it is the back of:
+     the link only points forwards in the API, and answering it the other way
+     round would mean hunting for whichever card points here. */
+  function hiddenNote(card) {
+    if (!Faces.isHidden(card)) return '';
+    return '' +
+      '<div class="note note-hidden">' +
+        '<strong>Hidden card.</strong> This is the reverse of another card, ' +
+        'not one that is drawn, searched for or added to a deck on its own.' +
+      '</div>';
+  }
+
   function detailHtml(card) {
     var fac = facClass(card.faction_code);
     /* Both faces here: the flip button turns the sheet over instead of swapping
@@ -1056,16 +1189,7 @@
     var art = Card3D.html(card, { back: true, id: 'art-card' });
 
     var stats = statsFor(card);
-
-    var backBlock = '';
-    if (card.back_text || card.back_flavor || card.back_name) {
-      backBlock = '' +
-        '<div class="backside">' +
-          '<h3>Reverse — ' + esc(card.back_name || card.name) + '</h3>' +
-          (card.back_text ? '<div class="textbox">' + text(card.back_text) + '</div>' : '') +
-          (card.back_flavor ? '<div class="flavor">' + text(card.back_flavor) + '</div>' : '') +
-        '</div>';
-    }
+    var backBlock = reverseBlock(card);
 
     var meta = '' +
       metaCell('Pack', '<a href="#/pack/' + esc(card.pack_code) + '">' + esc(card.pack_name) + '</a>') +
@@ -1078,6 +1202,7 @@
       metaCell('Deck requirements', deckRequirements(card)) +
       metaCell('Slot', card.slot ? esc(card.slot) : '') +
       metaCell('Restricted to', cardRefs(restrictedCodes(card))) +
+      metaCell('Back side', cardRefs(card.linked_to_code)) +
       metaCell('Alternate of', cardRefs(card.alternate_of_code)) +
       metaCell('Alternated by', cardRefs(card.alternated_by)) +
       metaCell('Duplicate of', cardRefs(card.duplicate_of_code)) +
@@ -1122,6 +1247,7 @@
                   ? Markup.iconHtml(card.faction_code, '', '', 'badge-ico') : '') +
                 esc(card.faction_name || 'Neutral') + '</span>' +
               '<span class="badge plain">' + esc(card.type_name) + '</span>' +
+              (Faces.isHidden(card) ? '<span class="badge warn">Hidden</span>' : '') +
               (card.xp != null ? '<span class="badge plain">Level ' + esc(String(card.xp)) + '</span>' : '') +
               flags.map(function (f) {
                 return '<span class="badge plain">' + esc(f) + '</span>';
@@ -1129,6 +1255,8 @@
             '</div>' +
             (card.traits ? '<div class="traits" style="margin-top:14px">' + esc(card.traits) + '</div>' : '') +
           '</div>' +
+
+          hiddenNote(card) +
 
           (stats ? '<div class="stats">' + stats + '</div>' : '') +
           skillIconsHtml(card) +
@@ -1145,23 +1273,36 @@
       '</div>';
   }
 
+  /* When the reverse is a card of its own, the button names it — the flip is the
+     only place the page shows that the two records are one card. */
   function wireFlip(card) {
     var btn = document.getElementById('flip');
     var stage = document.getElementById('art-card');
     if (!btn || !stage) return;
+
+    var name = Faces.back(card).name;
+    var toBack = name ? 'Flip to ' + name + ' ⤾' : 'Flip card ⤾';
+
+    btn.textContent = toBack;
     btn.addEventListener('click', function () {
-      var showingBack = Card3D.flip(stage);
-      btn.textContent = showingBack ? 'Show front ⤾' : 'Flip card ⤾';
+      btn.textContent = Card3D.flip(stage) ? 'Show front ⤾' : toBack;
     });
   }
 
   function wireViewer(card) {
     var frame = document.getElementById('art-frame');
     if (!frame) return;
+
+    /* The viewer opens on the face the page is showing: a card turned over here
+       and then clicked is a request to inspect that side, not the front. */
+    function open() {
+      Viewer.open(card, { flipped: Card3D.isFlipped(document.getElementById('art-card')) });
+    }
+
     Card3D.bind(frame);
-    frame.addEventListener('click', function () { Viewer.open(card); });
+    frame.addEventListener('click', open);
     frame.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); Viewer.open(card); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
     });
   }
 
@@ -1204,38 +1345,66 @@
     var hash = current.replace(/^#\/?/, '');
     var parts = hash.split('/').filter(Boolean);
 
-    if (!parts.length) return renderHome();
+    /* Anything that isn't the search route is somewhere the box can return to
+       once it is emptied. */
+    if (parts[0] !== 'search') preSearchHash = current;
+    syncSearchInput();
+    syncNav();
+
+    if (!parts.length) return renderBrowser([], '');       // the index browses every card
+    if (parts[0] === 'packs') return renderHome();
+    if (parts[0] === 'search') return renderSearch(decodeURIComponent(parts[1] || '').toLowerCase());
     if (parts[0] === 'pack' && parts[1]) return renderPack(decodeURIComponent(parts[1]));
     if (parts[0] === 'card' && parts[1]) return renderCard(decodeURIComponent(parts[1]));
 
-    showSearch(false);
     showBack(false);
-    showReplacedToggle(false);
     showFilters(false);
     html(view,
       '<div class="state error">' +
         '<div class="mono-tag">Uncharted route</div>' +
         '<div class="msg">Nothing is filed under “' + esc(hash) + '”.</div>' +
-        '<a class="btn-ghost" href="#/">Back to packs</a>' +
+        '<a class="btn-ghost" href="#/">Back to the cards</a>' +
       '</div>');
   }
 
   /* ---------- wiring ---------- */
 
+  /* The field only ever mirrors the search route: everywhere else it sits
+     empty, ready to take the collection-wide query. */
+  function syncSearchInput() {
+    var parts = routeParts();
+    searchInput.value = parts[0] === 'search'
+      ? decodeURIComponent(parts[1] || '') : '';
+  }
+
+  /* Typing rewrites the search route in place rather than pushing an entry per
+     keystroke; only the jump onto the route, and the way back off it, are
+     history the Back button should see. */
+  function runSearch(q) {
+    if (isSearch()) {
+      if (!q) { location.hash = preSearchHash || '#/'; return; }
+      if (q === state.query) return;
+      state.query = q;
+      lastHash = lastGrid = searchHash(q);
+      history.replaceState(null, '', lastHash);
+      applyFilters();
+    } else if (q) {
+      location.hash = searchHash(q);      // routes, and renderSearch takes it from there
+    }
+  }
+
   var debounce;
   searchInput.addEventListener('input', function () {
     clearTimeout(debounce);
     var q = searchInput.value.trim().toLowerCase();
-    debounce = setTimeout(function () { state.query = q; applyFilters(); }, 140);
+    debounce = setTimeout(function () { runSearch(q); }, 240);
   });
 
   searchInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { searchInput.value = ''; state.query = ''; applyFilters(); }
-  });
-
-  replacedBtn.addEventListener('click', function () {
-    showReplaced = !showReplaced;
-    paintHome();
+    if (e.key !== 'Escape') return;
+    clearTimeout(debounce);
+    searchInput.value = '';
+    runSearch('');
   });
 
   /* The grid we came from is one entry back, so going back keeps the forward
@@ -1263,6 +1432,9 @@
     }
     if (e.target.closest('#fb-add')) { togglePicker(); return; }
     if (e.target.closest('#facet-clear')) { clearFacets(); return; }
+    /* Styled as a facet but wired to its own flag, so it has to be caught
+       before the generic facet branch below. */
+    if (e.target.closest('.toggle-replaced')) { toggleReplaced(); return; }
 
     var btn = e.target.closest('.facet');
     if (!btn) return;
@@ -1279,6 +1451,10 @@
   pickerList.addEventListener('click', function (e) {
     var item = e.target.closest('.pp-item');
     if (item) togglePack(item.dataset.code);
+  });
+
+  pickerTools.addEventListener('click', function (e) {
+    if (e.target.closest('.toggle-replaced')) toggleReplaced();
   });
 
   pickerQ.addEventListener('input', function () {

@@ -34,8 +34,13 @@
     return p;
   }
 
+  function remember(card) {
+    cache.byCode[card.code] = card;
+    return card;
+  }
+
   function index(cards) {
-    for (var i = 0; i < cards.length; i++) cache.byCode[cards[i].code] = cards[i];
+    for (var i = 0; i < cards.length; i++) remember(cards[i]);
     return cards;
   }
 
@@ -90,11 +95,12 @@
   /* A single card. Served from whatever pack is already loaded when possible. */
   function getCard(code) {
     if (cache.byCode[code]) return Promise.resolve(cache.byCode[code]);
-    return getJSON(BASE + '/card/' + encodeURIComponent(code)).then(function (card) {
-      cache.byCode[card.code] = card;
-      return card;
-    });
+    return getJSON(BASE + '/card/' + encodeURIComponent(code)).then(remember);
   }
+
+  /* Whatever is already on the heap for a code, without asking for it. Callers
+     that can do without an answer use this rather than firing a request. */
+  function cached(code) { return cache.byCode[code] || null; }
 
   /* The endpoint getCard would hit — shown on the detail page for debugging. */
   function cardUrl(code) {
@@ -111,6 +117,7 @@
     getCycles: getCycles,
     getCards: getCards,
     getCard: getCard,
+    cached: cached,
     cardUrl: cardUrl,
     imageUrl: imageUrl,
     origin: ORIGIN

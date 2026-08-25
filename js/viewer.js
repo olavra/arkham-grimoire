@@ -1,10 +1,9 @@
 /* 3D card preview overlay: drag to rotate, middle-drag to pan, wheel/pinch to
-   zoom, flip, reset. */
+   zoom, flip, quarter turn, reset. */
 (function (global) {
   'use strict';
 
   var esc = Markup.escapeHtml;
-  var LANDSCAPE = ['investigator', 'act', 'agenda', 'scenario'];
   var reduceMotion = global.matchMedia &&
     global.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -16,7 +15,7 @@
   var stage = null;
   var lastFocus = null;
 
-  var rx = 0, ry = 0, zoom = 1;
+  var rx = 0, ry = 0, rz = 0, zoom = 1;
   var panX = 0, panY = 0;             // screen-space offset, in CSS px
   var vx = 0, vy = 0;                 // rotational velocity, degrees per frame
   var pointers = Object.create(null);
@@ -26,15 +25,19 @@
   var lastX = 0, lastY = 0, pinchDist = 0;
   var panning = false, panId = null, panLastX = 0, panLastY = 0;
   var spinFrame = null, tweenFrame = null;
-
-  function isLandscape(card) { return LANDSCAPE.indexOf(card.type_code) !== -1; }
+  var tweenTarget = null;             // where a running tween is headed, or null
 
   /* The pan rides on the zoom wrapper, outside the rotation, so it stays a flat
      screen-space nudge however the card is turned. Translating before scaling
      keeps it 1:1 with the pointer at any zoom — the parent box is unscaled. */
+  /* rotateZ comes last, so it is the first turn applied and stays a roll in the
+     card's own plane: the sheet spins about the face you are looking at however
+     it is tilted. On the back — a mirrored face — that reads as the opposite
+     direction on screen, which is what turning a real card over does. */
   function apply() {
     if (!card3d) return;
-    card3d.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)';
+    card3d.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)' +
+      ' rotateZ(' + rz.toFixed(2) + 'deg)';
     zoomEl.style.transform =
       'translate(' + panX.toFixed(1) + 'px,' + panY.toFixed(1) + 'px) ' +
       'scale(' + zoom.toFixed(3) + ')';
@@ -82,11 +85,18 @@
      with nothing to chase. Also why this re-runs after zooming, not just while
      dragging. Rotation is ignored — a tilted card only projects smaller, so the
      limit errs towards holding it on screen. */
+  /* An odd quarter turn stands the card on its side, swapping which of its two
+     dimensions faces which edge of the stage. */
+  function quarterTurned(deg) { return Math.abs(Math.round(deg / 90)) % 2 === 1; }
+
   function clampPan() {
     if (!stage || !card3d) return;
     var r = stage.getBoundingClientRect();
-    var maxX = Math.max(0, (card3d.offsetWidth * zoom - r.width) / 2);
-    var maxY = Math.max(0, (card3d.offsetHeight * zoom - r.height) / 2);
+    var q = quarterTurned(rz);
+    var w = (q ? card3d.offsetHeight : card3d.offsetWidth) * zoom;
+    var h = (q ? card3d.offsetWidth : card3d.offsetHeight) * zoom;
+    var maxX = Math.max(0, (w - r.width) / 2);
+    var maxY = Math.max(0, (h - r.height) / 2);
     panX = Math.max(-maxX, Math.min(maxX, panX));
     panY = Math.max(-maxY, Math.min(maxY, panY));
   }
@@ -107,45 +117,115 @@
     spinFrame = requestAnimationFrame(spin);
   }
 
-  /* ---------- tweened moves (flip / reset) ---------- */
+  /* ---------- tweened moves (flip / rotate / reset) ---------- */
 
-  function tweenTo(targetRx, targetRy, targetZoom, targetPanX, targetPanY, ms) {
-    stopSpin();
-    if (tweenFrame) cancelAnimationFrame(tweenFrame);
-    if (reduceMotion) {
-      rx = targetRx; ry = targetRy; zoom = targetZoom;
-      panX = targetPanX; panY = targetPanY;
+  function cancelTween() {
+    if (tweenFrame) { cancelAnimationFrame(tweenFrame); tweenFrame = null; }
+    tweenTarget = null;
+  }
+
+  /* Everything the user drives directly — a drag, the wheel, an arrow key —
+     takes the card off whatever it was doing first. */
+  function stopMotion() { stopSpin(); cancelTween(); }
+
+  function live(k) {
+    return k === 'rx' ? rx : k === 'ry' ? ry : k === 'rz' ? rz :
+           k === 'zoom' ? zoom : k === 'panX' ? panX : panY;
+  }
+
+  /* Where an axis is *heading*, which is not where it is while a tween runs.
+     Buttons pressed mid-flight step from the pending target, so a second Rotate
+     at 43° lands on 180 rather than 133: the discrete moves stay on the quarter
+     and half turns however fast they are hammered. */
+  function settled(k) { return tweenTarget ? tweenTarget[k] : live(k); }
+
+  /* `to` is partial: an axis left out keeps its existing destination, which is
+     how a flip turns the card without disturbing the roll, the zoom or the pan —
+     and why interrupting one move with another finishes the axes the new move
+     doesn't mention, instead of stranding them mid-tween. `done` runs on
+     landing, animated or not. */
+  function tweenTo(to, ms, done) {
+    var from = { rx: rx, ry: ry, rz: rz, zoom: zoom, panX: panX, panY: panY };
+    var at = function (k) { return to[k] === undefined ? settled(k) : to[k]; };
+    var target = {                          // reads the old target, so it precedes stopMotion
+      rx: at('rx'), ry: at('ry'), rz: at('rz'),
+      zoom: at('zoom'), panX: at('panX'), panY: at('panY')
+    };
+
+    stopMotion();
+    tweenTarget = target;
+
+    function land() {
+      rx = target.rx; ry = target.ry; rz = target.rz;
+      zoom = target.zoom; panX = target.panX; panY = target.panY;
+      /* Folding the roll back into 0–360 here, rather than in rotate(), keeps
+         the accumulated turns off every later tween: four Rotates must not leave
+         Reset unwinding a full circle. It is a no-op on screen. */
+      rz = ((rz % 360) + 360) % 360;
+      target.rz = rz;
+      tweenTarget = null;
       apply();
-      return;
+      if (done) done();
     }
 
-    var fromRx = rx, fromRy = ry, fromZoom = zoom;
-    var fromPanX = panX, fromPanY = panY;
+    if (reduceMotion) { land(); return; }
+
     var start = performance.now();
 
     function step(now) {
       var t = Math.min(1, (now - start) / ms);
+      if (t >= 1) { tweenFrame = null; land(); return; }
       var e = 1 - Math.pow(1 - t, 3);          // ease-out cubic
-      rx = fromRx + (targetRx - fromRx) * e;
-      ry = fromRy + (targetRy - fromRy) * e;
-      zoom = fromZoom + (targetZoom - fromZoom) * e;
-      panX = fromPanX + (targetPanX - fromPanX) * e;
-      panY = fromPanY + (targetPanY - fromPanY) * e;
+      rx = from.rx + (target.rx - from.rx) * e;
+      ry = from.ry + (target.ry - from.ry) * e;
+      rz = from.rz + (target.rz - from.rz) * e;
+      zoom = from.zoom + (target.zoom - from.zoom) * e;
+      panX = from.panX + (target.panX - from.panX) * e;
+      panY = from.panY + (target.panY - from.panY) * e;
       apply();
-      if (t < 1) tweenFrame = requestAnimationFrame(step);
-      else tweenFrame = null;
+      tweenFrame = requestAnimationFrame(step);
     }
     tweenFrame = requestAnimationFrame(step);
   }
 
   function flip() {
-    /* Land on whichever half-turn is closest, so repeat presses alternate faces.
-       The pan is left alone — turning the card over is not a request to move it. */
-    var target = Math.round((ry + 180) / 180) * 180;
-    tweenTo(0, target, zoom, panX, panY, 520);
+    /* The closest half-turn to where the card is *headed*: at rest that is the
+       nearest flat face to whatever angle a drag left behind, and mid-flight it
+       is one face on from the pending target, so repeat presses alternate faces
+       instead of compounding a part-finished flip. A quarter turn already under
+       way carries on; the pan is left alone, since turning the card over is not
+       a request to move it. */
+    tweenTo({ rx: 0, ry: Math.round((settled('ry') + 180) / 180) * 180 }, 520);
   }
 
-  function reset() { tweenTo(0, 0, 1, 0, 0, 420); }
+  /* What the card ends up at after a quarter turn. Standing a portrait card on
+     its side makes it taller than the stage is deep, so the turn pulls the zoom
+     back far enough to keep the whole card in view — but only from a card that
+     already fitted. Past 1:1 the user is reading the print, and rescaling under
+     them would lose their place. */
+  function fitZoom(quarter) {
+    var z = settled('zoom');                 // a reset in flight is already going to 1
+    if (!stage || !card3d || z > 1) return z;
+    var r = stage.getBoundingClientRect();
+    var w = quarter ? card3d.offsetHeight : card3d.offsetWidth;
+    var h = quarter ? card3d.offsetWidth : card3d.offsetHeight;
+    if (!w || !h) return z;
+    return Math.min(z, (r.width * 0.94) / w, (r.height * 0.94) / h);
+  }
+
+  /* A quarter turn in the card's own plane — for the landscape scans ArkhamDB
+     stores upright, and for reading a sideways reverse. Stepping from the
+     pending target rather than the live angle is what keeps a hammered button on
+     the quarters; every press turns the same way round. */
+  function rotate() {
+    var target = settled('rz') + 90;
+    tweenTo({ rz: target, zoom: fitZoom(quarterTurned(target)) }, 420, function () {
+      clampPan();
+      apply();
+    });
+  }
+
+  function reset() { tweenTo({ rx: 0, ry: 0, rz: 0, zoom: 1, panX: 0, panY: 0 }, 420); }
 
   /* ---------- pointer handling ---------- */
 
@@ -168,7 +248,7 @@
     /* Middle button pans instead of rotating. It never reaches the rotation
        bookkeeping, so a pan can't be mistaken for the first half of a pinch. */
     if (e.pointerType === 'mouse' && e.button === 1) {
-      stopSpin();
+      stopMotion();
       panning = true;
       panId = e.pointerId;
       panLastX = e.clientX; panLastY = e.clientY;
@@ -180,7 +260,7 @@
     if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
     pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
     pointerCount++;
-    stopSpin();
+    stopMotion();
 
     if (pointerCount === 1) {
       dragging = true;
@@ -256,13 +336,14 @@
 
   function onWheel(e) {
     e.preventDefault();
-    stopSpin();
+    stopMotion();
     zoomAt(clampZoom(zoom * (1 - e.deltaY * 0.0015)), e.clientX, e.clientY);
   }
 
   /* The keyboard has no pointer to zoom towards, so it works off the middle of
      the stage — whatever the user has centred stays centred. */
   function zoomStep(k) {
+    stopMotion();
     var c = stageCentre();
     zoomAt(clampZoom(zoom * k), c.x, c.y);
   }
@@ -270,13 +351,14 @@
   function onKey(e) {
     switch (e.key) {
       case 'Escape': close(); break;
-      case 'ArrowLeft':  stopSpin(); ry -= 10; apply(); e.preventDefault(); break;
-      case 'ArrowRight': stopSpin(); ry += 10; apply(); e.preventDefault(); break;
-      case 'ArrowUp':    stopSpin(); rx = clampX(rx + 10); apply(); e.preventDefault(); break;
-      case 'ArrowDown':  stopSpin(); rx = clampX(rx - 10); apply(); e.preventDefault(); break;
+      case 'ArrowLeft':  stopMotion(); ry -= 10; apply(); e.preventDefault(); break;
+      case 'ArrowRight': stopMotion(); ry += 10; apply(); e.preventDefault(); break;
+      case 'ArrowUp':    stopMotion(); rx = clampX(rx + 10); apply(); e.preventDefault(); break;
+      case 'ArrowDown':  stopMotion(); rx = clampX(rx - 10); apply(); e.preventDefault(); break;
       case '+': case '=': zoomStep(1.15); break;
       case '-': case '_': zoomStep(1 / 1.15); break;
       case 'f': case 'F': flip(); break;
+      case 't': case 'T': rotate(); break;
       case 'r': case 'R': reset(); break;
       case 'Tab': trapTab(e); break;
     }
@@ -303,16 +385,58 @@
 
   /* ---------- open / close ---------- */
 
-  function open(card) {
+  /* opts.flipped — open showing the reverse, for a card the page has already
+     turned over. */
+  function open(card, opts) {
     if (root) close();
+    opts = opts || {};
 
-    var landscape = isLandscape(card);
-    var fallback = CardBack.backFor(card);
-    var front = API.imageUrl(card.imagesrc) || fallback;
-    var back = API.imageUrl(card.backimagesrc) || fallback;
-    var backIsReal = !!card.backimagesrc;
+    var landscape = Card3D.isLandscape(card);
+    var deckBack = CardBack.backFor(card);
+    var art = Faces.art(card);               // API scan, then img/cards/<code>.png
+    var reverse = Faces.back(card);          // this card's scan or its linked card's
 
-    rx = 0; ry = 0; zoom = 1; vx = 0; vy = 0; panX = 0; panY = 0;
+    /* Only real card art is measured against the frame — see Card3D's
+       orientation note; the generic backs are portrait by construction. A back
+       is measured as 'fit', so a reverse printed the other way round turns
+       within the card instead of reshaping it.
+
+       `data-blank` opts a face into Card3D's candidate chain: fall through to
+       the next image, then to the panel. */
+    function faceImg(src, alt, orient, fallback, blank) {
+      return '<img src="' + esc(src) + '" alt="' + esc(alt) + '"' +
+        (orient ? ' data-orient="' + orient + '"' : '') +
+        (fallback ? ' data-fallback="' + esc(fallback) + '"' : '') +
+        (blank === undefined ? '' : ' data-blank="' + esc(blank || '') + '"') + '>';
+    }
+
+    var frontFace = '<div class="v-face v-front">' +
+      faceImg(art.src, card.name + ' front', 'auto', art.fallback, card.name) + '</div>';
+
+    /* A reverse with no candidate at all gets a panel, not the generic deck
+       back — see Card3D's blankInner. */
+    var backFace = reverse.missing
+      ? '<div class="v-face v-back v-blank"><span class="face-blank">' +
+          (reverse.name ? '<b>' + esc(reverse.name) + '</b>' : '') +
+          '<span>No image</span></span></div>'
+      : '<div class="v-face v-back">' +
+          (reverse.src
+            ? faceImg(reverse.src, (reverse.name || card.name) + ' back', 'fit',
+                      reverse.fallback, reverse.name)
+            : faceImg(deckBack, card.name + ' back')) +
+        '</div>';
+
+    /* The subtitle says what the other side actually is, since for a linked
+       card that is a different card type from the one named in the title. */
+    var backNote = reverse.real
+      ? (reverse.card ? ' · back: ' + reverse.card.name +
+          (reverse.card.type_name ? ' (' + reverse.card.type_name + ')' : '') : '')
+      : reverse.missing
+        ? ' · back: ' + (reverse.name || 'reverse') + ' — no image'
+        : ' — generic ' + CardBack.kindFor(card) + ' back';
+
+    rx = 0; ry = opts.flipped ? 180 : 0; rz = 0;
+    zoom = 1; vx = 0; vy = 0; panX = 0; panY = 0;
 
     root = document.createElement('div');
     root.className = 'viewer';
@@ -326,9 +450,7 @@
         '<div class="viewer-bar">' +
           '<div class="viewer-title">' +
             '<span class="vt-name">' + esc(card.name) + '</span>' +
-            '<span class="vt-sub">' + esc(card.type_name) +
-              (backIsReal ? '' : ' — generic ' + esc(CardBack.kindFor(card)) + ' back') +
-            '</span>' +
+            '<span class="vt-sub">' + esc(card.type_name) + esc(backNote) + '</span>' +
           '</div>' +
           '<button class="viewer-x" id="viewer-close" aria-label="Close preview">✕</button>' +
         '</div>' +
@@ -336,14 +458,16 @@
         '<div class="viewer-stage" data-close="1">' +
           '<div class="viewer-zoom">' +
             '<div class="viewer-card' + (landscape ? ' landscape' : '') + '" tabindex="-1">' +
-              '<div class="v-face v-front"><img src="' + esc(front) + '" alt="' + esc(card.name) + ' front"></div>' +
-              '<div class="v-face v-back"><img src="' + esc(back) + '" alt="' + esc(card.name) + ' back"></div>' +
+              frontFace +
+              backFace +
             '</div>' +
           '</div>' +
         '</div>' +
 
         '<div class="viewer-controls">' +
           '<button class="btn-ghost" id="viewer-flip">Flip <kbd>F</kbd></button>' +
+          '<button class="btn-ghost" id="viewer-rotate" aria-label="Rotate 90 degrees">' +
+            'Rotate 90° <kbd>T</kbd></button>' +
           '<button class="btn-ghost" id="viewer-reset">Reset <kbd>R</kbd></button>' +
           '<span class="viewer-hint">Drag to rotate · middle-drag to pan · ' +
             'scroll to zoom · <kbd>Esc</kbd> to close</span>' +
@@ -384,6 +508,7 @@
     });
     root.querySelector('#viewer-close').addEventListener('click', close);
     root.querySelector('#viewer-flip').addEventListener('click', flip);
+    root.querySelector('#viewer-rotate').addEventListener('click', rotate);
     root.querySelector('#viewer-reset').addEventListener('click', reset);
 
     document.addEventListener('keydown', onKey);
@@ -395,8 +520,7 @@
 
   function close() {
     if (!root) return;
-    stopSpin();
-    if (tweenFrame) { cancelAnimationFrame(tweenFrame); tweenFrame = null; }
+    stopMotion();
 
     document.removeEventListener('keydown', onKey);
     global.removeEventListener('resize', syncSize);
@@ -417,5 +541,7 @@
     lastFocus = null;
   }
 
-  global.Viewer = { open: open, close: close };
+  /* `resize` is also how Card3D asks for a re-measure after it has flipped the
+     card's orientation under us. */
+  global.Viewer = { open: open, close: close, resize: syncSize };
 })(window);

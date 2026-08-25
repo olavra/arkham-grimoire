@@ -97,12 +97,26 @@
     );
   }
 
+  /* Trait references arrive double-bracketed — "a [[Ghoul]] enemy". The brackets
+     are ArkhamDB's markup for "this word is a trait", not part of the sentence,
+     so they go: the tag itself is what says it. The name is already escaped by
+     the time this runs. */
+  function traitTag(name) {
+    return '<span class="ah-trait">' + name + '</span>';
+  }
+
+  /* [[Trait]] first — otherwise the icon pass eats the inner [Trait] and leaves
+     the outer brackets stranded around the tag. */
+  function tokens(html) {
+    return html
+      .replace(/\[\[([^\[\]]+)\]\]/g, function (_, name) { return traitTag(name); })
+      .replace(/\[([a-z_0-9]+)\]/gi, function (_, token) { return icon(token); });
+  }
+
   /* Card text -> HTML paragraphs. */
   function renderText(raw) {
     if (!raw) return '';
-    var html = reopenTags(escapeHtml(raw));
-    html = html.replace(/\[([a-z_0-9]+)\]/gi, function (_, token) { return icon(token); });
-    return html
+    return tokens(reopenTags(escapeHtml(raw)))
       .split(/\n+/)
       .filter(function (line) { return line.trim() !== ''; })
       .map(function (line) { return '<p>' + line + '</p>'; })
@@ -112,9 +126,7 @@
   /* Same, but inline (no paragraph wrapping) — used for names and traits. */
   function renderInline(raw) {
     if (!raw) return '';
-    return reopenTags(escapeHtml(raw))
-      .replace(/\[([a-z_0-9]+)\]/gi, function (_, token) { return icon(token); })
-      .replace(/\n+/g, ' ');
+    return tokens(reopenTags(escapeHtml(raw))).replace(/\n+/g, ' ');
   }
 
   var FACTIONS = ['guardian', 'seeker', 'rogue', 'mystic', 'survivor', 'neutral', 'mythos'];
