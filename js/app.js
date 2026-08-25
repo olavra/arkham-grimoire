@@ -13,6 +13,8 @@
   var filtersN = document.getElementById('filters-n');
   var cardsBtn = document.getElementById('cards-btn');
   var packsBtn = document.getElementById('packs-btn');
+  var navToggle = document.getElementById('nav-toggle');
+  var navLinks = document.getElementById('nav-links');
   var picker = document.getElementById('pack-picker');
   var pickerQ = document.getElementById('pp-q');
   var pickerList = document.getElementById('pp-list');
@@ -786,6 +788,23 @@
     if (picker.hidden) openPicker(); else closePicker();
   }
 
+  /* ---------- section menu ---------- */
+
+  /* Only a menu on a narrow window — wider than that CSS keeps the links inline
+     as display:contents and the class does nothing. */
+  function closeNav() {
+    if (!navLinks.classList.contains('open')) return;
+    navLinks.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleNav() {
+    var open = !navLinks.classList.contains('open');
+    navLinks.classList.toggle('open', open);
+    navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) closePicker();          // both hang off the header; one at a time
+  }
+
   /* ---------- filtering ---------- */
 
   /* Toggles inside a group are OR'd; the groups and the text box are AND'd. */
@@ -1365,6 +1384,7 @@
     if (state.observer) { state.observer.disconnect(); state.observer = null; }
     Viewer.close();   // a back/forward press while the preview is open should dismiss it
     closePicker();
+    closeNav();
 
     var current = location.hash || '#/';
     if (current !== lastHash) { prevHash = lastHash; lastHash = current; }
@@ -1397,8 +1417,16 @@
   /* ---------- wiring ---------- */
 
   /* The field only ever mirrors the search route: everywhere else it sits
-     empty, ready to take the collection-wide query. */
+     empty, ready to take the collection-wide query.
+
+     Never while it has focus, though. Typing rewrites the hash, and the
+     hashchange it triggers can land a whole render later — long enough on a
+     phone for more characters to have been typed. Writing the by-then stale
+     term back would truncate them, and doing it mid-composition (which is most
+     of the time on a soft keyboard, where the word is only committed when the
+     keyboard closes) drops the pending word altogether. */
   function syncSearchInput() {
+    if (document.activeElement === searchInput) return;
     var parts = routeParts();
     searchInput.value = parts[0] === 'search'
       ? decodeURIComponent(parts[1] || '') : '';
@@ -1421,13 +1449,31 @@
   }
 
   var debounce;
+  function currentQuery() { return searchInput.value.trim().toLowerCase(); }
+
   searchInput.addEventListener('input', function () {
     clearTimeout(debounce);
-    var q = searchInput.value.trim().toLowerCase();
+    var q = currentQuery();
     debounce = setTimeout(function () { runSearch(q); }, 240);
   });
 
+  /* Dismissing a soft keyboard commits whatever word it was composing and
+     blurs the field, which is the moment the route has to catch up with what
+     the box actually holds — waiting out the debounce would leave the results
+     a word behind. */
+  searchInput.addEventListener('blur', function () {
+    clearTimeout(debounce);
+    runSearch(currentQuery());
+  });
+
   searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {         // the phone keyboard's Go key: search, then get out of the way
+      e.preventDefault();
+      clearTimeout(debounce);
+      runSearch(currentQuery());
+      searchInput.blur();
+      return;
+    }
     if (e.key !== 'Escape') return;
     clearTimeout(debounce);
     searchInput.value = '';
@@ -1488,14 +1534,24 @@
     filterPicker(pickerQ.value.trim().toLowerCase());
   });
 
+  navToggle.addEventListener('click', toggleNav);
+
+  /* Tapping the section you are already on routes nowhere, so the menu has to
+     shut itself rather than wait for a hashchange. */
+  navLinks.addEventListener('click', function (e) {
+    if (e.target.closest('a')) closeNav();
+  });
+
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !picker.hidden) closePicker();
+    if (e.key !== 'Escape') return;
+    if (!picker.hidden) closePicker();
+    closeNav();
   });
 
   document.addEventListener('pointerdown', function (e) {
-    if (picker.hidden) return;
-    if (e.target.closest('#pack-picker') || e.target.closest('#fb-add')) return;
-    closePicker();
+    if (!picker.hidden &&
+        !e.target.closest('#pack-picker') && !e.target.closest('#fb-add')) closePicker();
+    if (!e.target.closest('#nav-links') && !e.target.closest('#nav-toggle')) closeNav();
   });
 
   document.addEventListener('click', function (e) {

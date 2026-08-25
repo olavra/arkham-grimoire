@@ -25,21 +25,37 @@
        it. Route changes only ever hide a control, never move one. -->
   <div class="topbar">
     <div class="topbar-nav">
+      <!-- Narrow windows only: the two section links fold into this menu so the
+           brand and the search field can share the one row. -->
+      <button type="button" class="btn-ghost nav-toggle" id="nav-toggle"
+              aria-label="Sections" aria-expanded="false" aria-controls="nav-links">
+        <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M3 6h18M3 12h18M3 18h18"/>
+        </svg>
+      </button>
       <a class="brand" href="#/">
         <span class="logo"></span>
         <span>Arkham <span class="slash">Grimoire</span></span>
       </a>
-      <a class="btn-ghost nav-btn" href="#/" id="cards-btn">Cards</a>
-      <a class="btn-ghost nav-btn" href="#/packs" id="packs-btn">Packs</a>
+      <!-- display:contents while there is room, so the links sit in the bar
+           exactly as they did; a dropdown panel once there isn't. -->
+      <div class="nav-links" id="nav-links">
+        <a class="btn-ghost nav-btn" href="#/" id="cards-btn">Cards</a>
+        <a class="btn-ghost nav-btn" href="#/packs" id="packs-btn">Packs</a>
+      </div>
       <a class="btn-ghost back-btn" id="back-btn" href="#/packs" hidden>
         <span aria-hidden="true">←</span><span>Back</span>
       </a>
     </div>
 
     <div class="topbar-tools">
+      <!-- Named here too: the label is display:none on a narrow window, which
+           takes it out of the accessibility tree along with the button's name. -->
       <button type="button" class="btn-ghost fb-toggle" id="filters-toggle" hidden
-              aria-expanded="true" aria-controls="filterbar">
-        <span class="fb-ico" aria-hidden="true">≡</span><span class="fb-word">Filters</span><span class="fb-n" id="filters-n"></span>
+              aria-label="Filters" aria-expanded="true" aria-controls="filterbar">
+        <svg class="fb-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>
+        </svg><span class="fb-word">Filters</span><span class="fb-n" id="filters-n"></span>
       </button>
       <!-- One global search, present on every route: it always queries the whole
            card pool, never whatever the current view happens to hold. -->

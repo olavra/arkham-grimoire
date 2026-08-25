@@ -113,11 +113,19 @@ a{color:inherit;text-decoration:none}
   border-bottom:1px solid var(--line-2);
 }
 .topbar{
+  position:relative;                   /* anchors the narrow-window nav menu */
   height:var(--topbar-h);
   display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:0 clamp(18px,4vw,42px);
 }
 .topbar-nav{display:flex;align-items:center;gap:14px;min-width:0}
+/* Wide enough for the links themselves: no menu, no button. */
+.nav-links{display:contents}
+.nav-toggle{display:none}
+.nav-ico{
+  width:16px;height:16px;flex-shrink:0;
+  fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;
+}
 .brand{
   display:flex;align-items:center;gap:11px;
   font-weight:600;font-size:16px;letter-spacing:-.01em;white-space:nowrap;
@@ -174,7 +182,12 @@ a{color:inherit;text-decoration:none}
 .back-btn span:first-child{color:var(--indigo-soft);font-size:15px;line-height:1}
 
 .fb-toggle{gap:9px}
-.fb-toggle .fb-ico{color:var(--ink-3);font-size:15px;line-height:1}
+/* Funnel, drawn rather than typed: no glyph in the text fonts reads as a filter. */
+.fb-toggle .fb-ico{
+  width:15px;height:15px;flex-shrink:0;
+  fill:var(--ink-3);transition:fill .3s;
+}
+.fb-toggle.on .fb-ico{fill:var(--indigo-soft)}
 .fb-toggle .fb-n{
   font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--ink-4);
 }
@@ -875,6 +888,10 @@ body.viewer-open{overflow:hidden}
   position:fixed;inset:0;z-index:400;
   display:flex;align-items:stretch;justify-content:center;
   opacity:0;transition:opacity .22s var(--ee);
+  /* The shell's own padding, hoisted so the card can size itself against the
+     width actually left for it. */
+  --v-pad:clamp(14px,3vw,32px);
+  --v-max-w:calc(100vw - 2 * var(--v-pad));
 }
 .viewer.in{opacity:1}
 
@@ -887,8 +904,8 @@ body.viewer-open{overflow:hidden}
 
 .viewer-shell{
   position:relative;z-index:1;
-  flex:1;display:flex;flex-direction:column;
-  padding:18px clamp(14px,3vw,32px) 22px;
+  flex:1;min-width:0;display:flex;flex-direction:column;
+  padding:18px var(--v-pad) 22px;
   pointer-events:none;                 /* only the bars and the stage take input */
 }
 .viewer-shell > *{pointer-events:auto}
@@ -917,7 +934,10 @@ body.viewer-open{overflow:hidden}
 
 /* stage — the only element that owns the 3D perspective */
 .viewer-stage{
-  flex:1;display:grid;place-items:center;
+  /* min-width/height:0 so an oversized card is clipped by the stage rather than
+     stretching it — a grid item sized to its content would widen the shell and
+     shove the title and the close button off screen. */
+  flex:1;min-width:0;min-height:0;display:grid;place-items:center;
   perspective:1700px;
   touch-action:none;overflow:hidden;
   cursor:grab;
@@ -933,13 +953,16 @@ body.viewer-open{overflow:hidden}
   --w:0px;--h:0px;
   --radius:calc(var(--w) * 0.044);
   position:relative;
-  height:min(70vh,760px);aspect-ratio:5/7;
+  /* The width the aspect ratio derives from the height has to fit too, hence the
+     third term: a landscape card is 1.4x as wide as it is tall, and on a phone
+     it is the window's width, not its height, that runs out first. */
+  height:min(70vh,760px,calc(var(--v-max-w) * 7 / 5));aspect-ratio:5/7;
   transform-style:preserve-3d;
   outline:none;
   /* No `filter` here: it would flatten preserve-3d and kill backface-visibility,
      which shows a mirrored front face instead of the back. Shadow goes on the faces. */
 }
-.viewer-card.landscape{aspect-ratio:7/5;height:min(56vh,560px)}
+.viewer-card.landscape{aspect-ratio:7/5;height:min(56vh,560px,calc(var(--v-max-w) * 5 / 7))}
 .viewer-card.grabbing{cursor:grabbing}
 .viewer-stage.panning,.viewer-stage.panning .viewer-card{cursor:all-scroll}
 @keyframes viewerPop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
@@ -980,9 +1003,11 @@ body.viewer-open{overflow:hidden}
 }
 
 @media (max-width:640px){
-  .viewer-card{height:min(58vh,520px)}
-  .viewer-card.landscape{height:min(40vh,380px)}
-  .viewer-hint{display:none}
+  .viewer-card{height:min(58vh,520px,calc(var(--v-max-w) * 7 / 5))}
+  .viewer-card.landscape{height:min(40vh,380px,calc(var(--v-max-w) * 5 / 7))}
+  /* No keyboard to press them on, and the keycaps are what makes the three
+     buttons overflow their row. */
+  .viewer-hint,.viewer-controls kbd{display:none}
 }
 
 /* ---------- states ---------- */
@@ -1022,13 +1047,52 @@ body.viewer-open{overflow:hidden}
 }
 
 @media (max-width:640px){
+  /* One row still, but only because Cards and Packs have moved into the menu:
+     brand, search and the two icon buttons are all that is left to fit. */
+  .topbar{gap:8px;padding:0 12px}
+  .topbar-nav{gap:8px;flex:0 0 auto}
+  .topbar-tools{flex:1;min-width:0;justify-content:flex-end}
+  .search{flex:1 1 auto;min-width:0;padding:0 12px}
+  .search input{width:100%;min-width:0}
+
+  .nav-toggle{display:inline-flex;min-width:42px;padding:0 12px;justify-content:center}
+  .nav-links{
+    position:absolute;top:calc(100% - 4px);left:12px;z-index:30;
+    display:flex;flex-direction:column;gap:6px;
+    min-width:190px;padding:8px;
+    background:rgba(11,15,27,.97);border:1px solid var(--glass-border);
+    border-radius:var(--r-md);box-shadow:0 30px 70px rgba(0,0,0,.6);
+    backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  }
+  .nav-links:not(.open){display:none}
+  .nav-links .nav-btn{width:100%;justify-content:flex-start}
+
   .brand span:not(.logo){font-size:14px}
   .btn-ghost{padding:0 14px}
   .back-btn span:last-child,.fb-toggle .fb-word{display:none}
+  /* Icon only: with the label gone, the gap before the count chip — empty
+     whenever no filter is set — would leave the glyph sitting off-centre. */
+  /* Past the search field, at the edge: icon-only, it reads as a tool acting on
+     what the search field returns rather than as a second field. */
+  .fb-toggle{order:1;min-width:42px;padding:0 12px;justify-content:center;gap:6px}
+  .fb-toggle .fb-n:empty{display:none}
   .card-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
-  .fb-groups{gap:8px 14px}
-  .fb-tail{margin-left:0}
+  /* The rows stop being boxes so every group becomes a direct flex item of the
+     bar: one group per line, and the count/Clear tail can then be ordered last
+     instead of being stuck mid-bar under Level, which is where it lands the
+     moment its own row wraps. */
+  .fb-groups{gap:9px}
+  .fb-row{display:contents}
+  .fb-tail{order:1;margin-left:0;gap:12px}
   .pack-picker{left:12px;width:calc(100vw - 24px)}
+}
+
+/* Phone: one card per row. Two columns of ~180px each render the art too small
+   to read, and the card face is the point of the grid. */
+@media (max-width:500px){
+  .card-grid{grid-template-columns:1fr}
+  .tile-name{font-size:15px}
+  .tile-sub{font-size:12px}
 }
 
 @media (max-width:460px){
