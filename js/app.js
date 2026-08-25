@@ -106,7 +106,10 @@
 
   /* The search field is global: it always queries the whole card pool from its
      own route, whatever page it was typed on. This remembers where to drop the
-     user back once the box is emptied. */
+     user back once the box is emptied — always a card browser, since that is
+     what a set of results is. A card page or the pack index are places the
+     search was launched *from*, not places emptying it should strand the user
+     on. */
   var preSearchHash = '#/';
 
   /* The 43 packs the Investigator/Campaign Expansions superseded. Shown by
@@ -1392,9 +1395,9 @@
     var hash = current.replace(/^#\/?/, '');
     var parts = hash.split('/').filter(Boolean);
 
-    /* Anything that isn't the search route is somewhere the box can return to
-       once it is emptied. */
-    if (parts[0] !== 'search') preSearchHash = current;
+    /* Only the card browser — the index or a pack's grid — is somewhere the box
+       can return to once it is emptied. */
+    if (!parts.length || parts[0] === 'pack') preSearchHash = current;
     syncSearchInput();
     syncNav();
 
@@ -1432,8 +1435,8 @@
       ? decodeURIComponent(parts[1] || '') : '';
   }
 
-  /* Typing rewrites the search route in place rather than pushing an entry per
-     keystroke; only the jump onto the route, and the way back off it, are
+  /* A submitted term rewrites the search route in place rather than pushing an
+     entry per query; only the jump onto the route, and the way back off it, are
      history the Back button should see. */
   function runSearch(q) {
     if (isSearch()) {
@@ -1448,36 +1451,28 @@
     }
   }
 
-  var debounce;
   function currentQuery() { return searchInput.value.trim().toLowerCase(); }
 
-  searchInput.addEventListener('input', function () {
-    clearTimeout(debounce);
-    var q = currentQuery();
-    debounce = setTimeout(function () { runSearch(q); }, 240);
-  });
-
-  /* Dismissing a soft keyboard commits whatever word it was composing and
-     blurs the field, which is the moment the route has to catch up with what
-     the box actually holds — waiting out the debounce would leave the results
-     a word behind. */
-  searchInput.addEventListener('blur', function () {
-    clearTimeout(debounce);
-    runSearch(currentQuery());
-  });
-
+  /* The query runs when it is submitted, never while it is being typed: every
+     search is a full pass over the whole card pool, and re-running it per
+     keystroke burns work on terms the user never meant to look up. */
   searchInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {         // the phone keyboard's Go key: search, then get out of the way
+    if (e.key === 'Enter') {         // and the phone keyboard's Go key: search, then get out of the way
       e.preventDefault();
-      clearTimeout(debounce);
       runSearch(currentQuery());
       searchInput.blur();
       return;
     }
     if (e.key !== 'Escape') return;
-    clearTimeout(debounce);
     searchInput.value = '';
     runSearch('');
+  });
+
+  /* type=search fires this on the native × as well as on Enter, and clearing
+     the box that way is a submission of the empty term — the way back off the
+     search route. */
+  searchInput.addEventListener('search', function () {
+    runSearch(currentQuery());
   });
 
   /* The grid we came from is one entry back, so going back keeps the forward
