@@ -23,7 +23,7 @@ The one exception is the five class symbols. ArkhamDB draws those from 16×16 PN
 | Path | What |
 |---|---|
 | `fonts/arkham-icons.{woff,ttf,otf}` | the icon font, unmodified |
-| `img/icons/<name>.svg` | every glyph extracted to a standalone SVG (`fill="currentColor"`, 1024-unit em box) |
+| `img/icons/<name>.svg` | every glyph extracted to a standalone SVG (`fill="currentColor"`, 1024-unit em box), plus the two hand-added drawings below |
 | `img/factions/<faction>.png` | ArkhamDB's own 16px class plates, as shipped (kept for reference — the UI uses the font) |
 | `css/arkham-icons.css` | `@font-face` + the `.icon-*` / `.color-*` classes |
 
@@ -110,6 +110,22 @@ Upstream `app.css` has `.icon-seal_b:before{content:"=2"}` — a typo that print
 
 Every glyph in the font is accounted for above — nothing is left unmapped.
 
+### Not in the font
+
+Health and sanity have no glyph upstream, so the drawings are kept as files and painted
+as a CSS mask tinted with `currentColor` — the sources are solid black, not
+`currentColor`, so they cannot be dropped in as an `<img>` and still follow the palette.
+`docs/regen-icons.py` only writes the names it knows about, so it leaves these alone.
+
+| Icon | class | SVG |
+|---|---|---|
+| Health | `.ah-svg.ah-svg-health` (`.color-health`) | `img/icons/health.svg` |
+| Sanity | `.ah-svg.ah-svg-sanity` (`.color-sanity`) | `img/icons/sanity.svg` |
+
+The mask classes live in `css/style.css`, not `css/arkham-icons.css`, which stays a
+mirror of upstream. `Markup.iconHtml('health', …)` and the `[health]` / `[sanity]` tokens
+pick them up automatically — nothing at the call site changes.
+
 ## Using them
 
 ```html
@@ -136,8 +152,9 @@ Card text coming back from the API keeps its `[token]` markup; `Markup.renderTex
 - card text, flavour text and reverse-side text (via `Markup.renderText`)
 - the "Icons" line on the card detail page — one pip per skill with a `×N` count, rather
   than the glyph repeated once per printed copy
-- the skill stat tiles — Willpower / Intellect / Combat / Agility, and the enemy and
-  location stats that reuse those kinds (Fight, Evade, Shroud, Clues)
+- the stat tiles — Willpower / Intellect / Combat / Agility / Health / Sanity, and the
+  enemy and location stats that reuse those kinds (Fight, Evade, Shroud, Clues, Damage,
+  Horror)
 - the class symbol on every grid tile, on the faction filter chips, and on the faction
   badge in the card header
 - the unique marker before a card's name

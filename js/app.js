@@ -801,16 +801,20 @@
 
       if (!lastGrid) showBack(true, '#/pack/' + card.pack_code);
       html(view, detailHtml(card));
+      hydrateCardRefs(token);
+      linkifyCardText(card, token);
       wireFlip(card);
       wireViewer(card);
       restoreScroll(location.hash);
     }).catch(function (err) { if (token === state.token) failure(err); });
   }
 
-  /* stat kinds that the Arkham icon font actually has a glyph for */
+  /* stat kinds Markup can draw an icon for — font glyphs, plus health and
+     sanity from img/icons/ */
   var STAT_ICONS = {
     willpower: 'willpower', intellect: 'intellect',
-    combat: 'combat', agility: 'agility'
+    combat: 'combat', agility: 'agility',
+    health: 'health', sanity: 'sanity'
   };
 
   function statHtml(kind, key, value) {
@@ -905,6 +909,145 @@
       '<span class="v">' + value + '</span></div>';
   }
 
+  /* restrictions.investigator is a code -> code map, so the values carry no more
+     information than the keys; hydrateCardRefs fetches the readable label. */
+  function restrictedCodes(card) {
+    var inv = card.restrictions && card.restrictions.investigator;
+    return inv ? Object.keys(inv) : [];
+  }
+
+  /* deck_requirements.card maps a required card's code to every printing that
+     satisfies it ({'01006': {'01006':…, '98005':…}}). Only the key is the card
+     actually named on the investigator; the rest are its reprints. */
+  function requirementCodes(card) {
+    var req = card.deck_requirements && card.deck_requirements.card;
+    return req ? Object.keys(req) : [];
+  }
+
+  /* Links to other cards. The API gives bare codes, and the name and pack live
+     on the referenced card, so each link ships with its code as placeholder text
+     and hydrateCardRefs rewrites it once that card has been fetched. */
+  function cardRefLink(code) {
+    return '<a class="cardref" data-code="' + esc(code) +
+      '" href="#/card/' + esc(code) + '">' + esc(code) + '</a>';
+  }
+
+  function refList(items) {
+    return items.length ? '<span class="cardrefs">' + items.join('') + '</span>' : '';
+  }
+
+  function cardRefs(codes) {
+    if (!codes) return '';
+    if (!Array.isArray(codes)) codes = [codes];
+    return refList(codes.map(cardRefLink));
+  }
+
+  var RANDOM_TARGETS = { basicweakness: 'basic weakness' };
+
+  /* Named cards first, then the "1 random basic weakness" style slots, which
+     have no code to link to. */
+  function deckRequirements(card) {
+    var items = requirementCodes(card).map(cardRefLink);
+    var random = (card.deck_requirements && card.deck_requirements.random) || [];
+    random.forEach(function (r) {
+      items.push('<span>1 random ' + esc(RANDOM_TARGETS[r.value] || r.value) + '</span>');
+    });
+    return refList(items);
+  }
+
+  /* errata_date arrives as a {date, timezone, timezone_type} object. */
+  function errataDate(errata) {
+    if (!errata) return '';
+    var raw = typeof errata === 'string' ? errata : errata.date;
+    if (!raw) return '';
+    return esc(String(raw).slice(0, 10));
+  }
+
+  /* Swap every card link's code for "Name (Pack)". Codes already in the API
+     cache resolve without a request; the rest fall back to the bare code. */
+  function hydrateCardRefs(token) {
+    var links = view.querySelectorAll('.cardref[data-code]');
+    var byCode = Object.create(null);
+
+    Array.prototype.forEach.call(links, function (a) {
+      var code = a.getAttribute('data-code');
+      (byCode[code] || (byCode[code] = [])).push(a);
+    });
+
+    Object.keys(byCode).forEach(function (code) {
+      API.getCard(code).then(function (ref) {
+        if (token !== state.token) return;
+        byCode[code].forEach(function (a) {
+          a.textContent = ref.name + (ref.pack_name ? ' (' + ref.pack_name + ')' : '');
+          a.title = ref.code;
+        });
+      }).catch(function () { /* leave the code showing */ });
+    });
+  }
+
+  function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  /* Card text names its deck requirements and restrictions in prose ("…: Roland's
+     .38 Special, Cover Up, 1 random basic weakness") with no markup to hang a
+     link on. Only names this card's own data already points at get linked, so
+     there is no guessing at arbitrary card names in the text. */
+  function linkifyNames(root, refs) {
+    /* Longest first: "Cover Up" must not win inside a longer title. */
+    refs = refs.slice().sort(function (a, b) { return b.name.length - a.name.length; });
+
+    var byName = Object.create(null);
+    refs.forEach(function (r) { if (!byName[r.name]) byName[r.name] = r; });
+
+    var re = new RegExp('(' + Object.keys(byName).map(escapeRe).join('|') + ')', 'g');
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var nodes = [];
+    var node;
+    while ((node = walker.nextNode())) nodes.push(node);
+
+    nodes.forEach(function (text) {
+      if (text.parentNode.closest('a')) return;
+
+      var raw = text.nodeValue;
+      var frag = document.createDocumentFragment();
+      var last = 0;
+      var m;
+
+      re.lastIndex = 0;
+      while ((m = re.exec(raw))) {
+        if (m.index > last) frag.appendChild(document.createTextNode(raw.slice(last, m.index)));
+        var ref = byName[m[0]];
+        var a = document.createElement('a');
+        a.className = 'cardref';
+        a.href = '#/card/' + ref.code;
+        a.title = ref.code + (ref.pack_name ? ' · ' + ref.pack_name : '');
+        a.textContent = m[0];
+        frag.appendChild(a);
+        last = m.index + m[0].length;
+      }
+      if (!last) return;
+
+      if (last < raw.length) frag.appendChild(document.createTextNode(raw.slice(last)));
+      text.parentNode.replaceChild(frag, text);
+    });
+  }
+
+  function linkifyCardText(card, token) {
+    var codes = requirementCodes(card).concat(restrictedCodes(card))
+      .filter(function (code) { return code !== card.code; });
+    if (!codes.length) return;
+
+    Promise.all(codes.map(function (code) {
+      return API.getCard(code).catch(function () { return null; });
+    })).then(function (refs) {
+      if (token !== state.token) return;
+      refs = refs.filter(function (r) { return r && r.name; });
+      if (!refs.length) return;
+      Array.prototype.forEach.call(view.querySelectorAll('.textbox'), function (box) {
+        linkifyNames(box, refs);
+      });
+    });
+  }
+
   function detailHtml(card) {
     var fac = facClass(card.faction_code);
     /* Both faces here: the flip button turns the sheet over instead of swapping
@@ -924,27 +1067,29 @@
         '</div>';
     }
 
-    var restrictions = '';
-    if (card.restrictions && card.restrictions.investigator) {
-      restrictions = Object.keys(card.restrictions.investigator).map(function (k) {
-        return '<a href="#/card/' + esc(k) + '">' +
-          esc(card.restrictions.investigator[k]) + '</a>';
-      }).join(', ');
-    }
-
     var meta = '' +
       metaCell('Pack', '<a href="#/pack/' + esc(card.pack_code) + '">' + esc(card.pack_name) + '</a>') +
-      metaCell('Card number', esc(String(card.position)) + ' / ' + esc(card.code)) +
+      metaCell('Card number', esc(card.pack_name) + ' #' + esc(String(card.position))) +
       metaCell('Encounter set', card.encounter_name ? esc(card.encounter_name) : '') +
       metaCell('Quantity in pack', card.quantity != null ? esc(String(card.quantity)) : '') +
       metaCell('Deck limit', card.deck_limit != null ? esc(String(card.deck_limit)) : '') +
+      metaCell('Deck size', card.deck_requirements && card.deck_requirements.size != null
+        ? esc(String(card.deck_requirements.size)) : '') +
+      metaCell('Deck requirements', deckRequirements(card)) +
       metaCell('Slot', card.slot ? esc(card.slot) : '') +
-      metaCell('Restricted to', restrictions) +
+      metaCell('Restricted to', cardRefs(restrictedCodes(card))) +
+      metaCell('Alternate of', cardRefs(card.alternate_of_code)) +
+      metaCell('Alternated by', cardRefs(card.alternated_by)) +
+      metaCell('Duplicate of', cardRefs(card.duplicate_of_code)) +
+      metaCell('Duplicated by', cardRefs(card.duplicated_by)) +
       metaCell('Illustrator', card.illustrator ? esc(card.illustrator) : '') +
-      metaCell('Errata', card.errata_date ? esc(card.errata_date) : '') +
+      metaCell('Errata', errataDate(card.errata_date)) +
       metaCell('On ArkhamDB',
         '<a href="' + esc(card.url || (API.origin + '/card/' + card.code)) +
-        '" target="_blank" rel="noopener">' + esc(card.code) + ' ↗</a>');
+        '" target="_blank" rel="noopener">' + esc(card.code) + ' ↗</a>') +
+      metaCell('API endpoint',
+        '<a href="' + esc(API.cardUrl(card.code)) +
+        '" target="_blank" rel="noopener">/card/' + esc(card.code) + ' ↗</a>');
 
     var flags = [];
     if (card.is_unique) flags.push('Unique');

@@ -96,6 +96,11 @@
     });
   }
 
+  /* The endpoint getCard would hit — shown on the detail page for debugging. */
+  function cardUrl(code) {
+    return BASE + '/card/' + encodeURIComponent(code);
+  }
+
   function imageUrl(src) {
     if (!src) return null;
     return /^https?:/.test(src) ? src : ORIGIN + src;
@@ -106,6 +111,7 @@
     getCycles: getCycles,
     getCards: getCards,
     getCard: getCard,
+    cardUrl: cardUrl,
     imageUrl: imageUrl,
     origin: ORIGIN
   };

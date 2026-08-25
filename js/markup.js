@@ -49,12 +49,17 @@
     per_investigator: ['per_investigator', '',  'Per investigator']
   };
 
-  /* No glyph exists for these, so they stay as small lettered tags. */
+  /* No glyph in the font, but a standalone drawing exists in img/icons/ —
+     css/style.css masks the file and tints it, so these behave like glyphs. */
+  var SVG_ICONS = {
+    health: 'Health',
+    sanity: 'Sanity'
+  };
+
+  /* No glyph and no drawing, so these stay as small lettered tags. */
   var TEXT_ICONS = {
     neutral: 'Neutral',
-    mythos:  'Mythos',
-    health:  'Health',
-    sanity:  'Sanity'
+    mythos:  'Mythos'
   };
 
   function escapeHtml(s) {
@@ -74,6 +79,8 @@
         '" role="img" aria-label="' + escapeHtml(def[2]) +
         '" title="' + escapeHtml(def[2]) + '"></span>';
     }
+
+    if (SVG_ICONS[key]) return iconHtml(key, key, SVG_ICONS[key], 'ah');
 
     /* No glyph in the font — show a readable tag rather than leaking raw
        [brackets] into the text. */
@@ -123,9 +130,11 @@
     return GLYPH_FACTIONS.indexOf(code) !== -1;
   }
 
-  /* Direct icon-font span, for chrome the API markup does not cover. */
+  /* Direct icon span, for chrome the API markup does not cover. Font glyph by
+     default; the SVG_ICONS names get the masked-file classes instead. */
   function iconHtml(name, colour, label, extra) {
-    return '<span class="' + (extra ? extra + ' ' : '') + 'icon-' + name +
+    var cls = SVG_ICONS[name] ? 'ah-svg ah-svg-' + name : 'icon-' + name;
+    return '<span class="' + (extra ? extra + ' ' : '') + cls +
       (colour ? ' color-' + colour : '') + '"' +
       (label ? ' role="img" aria-label="' + escapeHtml(label) + '" title="' +
         escapeHtml(label) + '"' : ' aria-hidden="true"') + '></span>';

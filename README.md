@@ -30,7 +30,7 @@ js/viewer.js          3D card preview overlay
 js/app.js             hash router and the three views
 fonts/                arkham-icons.{woff,ttf,otf}
 img/                  player.png / encounter.png — the two generic card backs
-img/icons/            every icon glyph as a standalone SVG
+img/icons/            every icon glyph as a standalone SVG, plus health/sanity
 img/factions/         ArkhamDB's 16px class plates (reference)
 docs/icons.md         the icon index
 docs/regen-icons.py   re-pulls the icon assets from ArkhamDB
