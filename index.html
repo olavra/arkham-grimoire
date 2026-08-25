@@ -20,9 +20,8 @@
 <div class="grid-overlay" aria-hidden="true"></div>
 
 <header class="site-head" id="site-head">
-  <!-- Fixed order, every route: brand and navigation left, tools right, with
-       the search field pinned to the far right and Filters immediately before
-       it. Route changes only ever hide a control, never move one. -->
+  <!-- Fixed order, every route: brand and navigation left, tools right, search
+       then Filters. Route changes only ever hide a control, never move one. -->
   <div class="topbar">
     <div class="topbar-nav">
       <!-- Narrow windows only: the two section links fold into this menu so the
@@ -33,9 +32,12 @@
           <path d="M3 6h18M3 12h18M3 18h18"/>
         </svg>
       </button>
-      <a class="brand" href="#/">
+      <!-- Labelled on the link: the wordmark swaps for its initials on a phone,
+           and whichever of the two is display:none is out of the a11y tree. -->
+      <a class="brand" href="#/" aria-label="Arkham Grimoire">
         <span class="logo"></span>
-        <span>Arkham <span class="slash">Grimoire</span></span>
+        <span class="brand-full" aria-hidden="true">Arkham <span class="slash">Grimoire</span></span>
+        <span class="brand-short" aria-hidden="true">A<span class="slash">G</span></span>
       </a>
       <!-- display:contents while there is room, so the links sit in the bar
            exactly as they did; a dropdown panel once there isn't. -->
@@ -49,6 +51,13 @@
     </div>
 
     <div class="topbar-tools">
+      <!-- One global search, present on every route: it always queries the whole
+           card pool, never whatever the current view happens to hold. Filters
+           sits after it at every width: it acts on what the search returns. -->
+      <label class="search" id="search-wrap">
+        <span class="search-ico" aria-hidden="true">⌕</span>
+        <input type="search" id="search" placeholder="Search all cards…" autocomplete="off" spellcheck="false" aria-label="Search all cards">
+      </label>
       <!-- Named here too: the label is display:none on a narrow window, which
            takes it out of the accessibility tree along with the button's name. -->
       <button type="button" class="btn-ghost fb-toggle" id="filters-toggle" hidden
@@ -57,12 +66,6 @@
           <path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>
         </svg><span class="fb-word">Filters</span><span class="fb-n" id="filters-n"></span>
       </button>
-      <!-- One global search, present on every route: it always queries the whole
-           card pool, never whatever the current view happens to hold. -->
-      <label class="search" id="search-wrap">
-        <span class="search-ico" aria-hidden="true">⌕</span>
-        <input type="search" id="search" placeholder="Search all cards…" autocomplete="off" spellcheck="false" aria-label="Search all cards">
-      </label>
     </div>
   </div>
 

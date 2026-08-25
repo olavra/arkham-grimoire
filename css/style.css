@@ -140,6 +140,7 @@ a{color:inherit;text-decoration:none}
   mask:url('../img/ico.svg') center/contain no-repeat;
 }
 .brand .slash{color:var(--indigo-soft)}
+.brand-short{display:none;letter-spacing:.02em}
 
 .topbar-tools{display:flex;align-items:center;gap:10px}
 
@@ -1048,10 +1049,11 @@ body.viewer-open{overflow:hidden}
   .search input{width:100%;min-width:0}
 }
 
-@media (max-width:640px){
-  /* One row still, but only because Cards and Packs have moved into the menu:
-     brand, search and the two icon buttons are all that is left to fit. */
-  .topbar{gap:8px;padding:0 12px}
+/* Below this the brand, both section links and a search field worth typing in
+   stop sharing a row: squeezed, the links overflow the bar and get clipped
+   rather than shrink. They move behind the hamburger instead. */
+@media (max-width:730px){
+  .topbar{gap:8px}
   .topbar-nav{gap:8px;flex:0 0 auto}
   .topbar-tools{flex:1;min-width:0;justify-content:flex-end}
   .search{flex:1 1 auto;min-width:0;padding:0 12px}
@@ -1059,7 +1061,7 @@ body.viewer-open{overflow:hidden}
 
   .btn-ghost.nav-toggle{display:inline-flex;min-width:42px;padding:0 12px;justify-content:center}
   .nav-links{
-    position:absolute;top:calc(100% - 4px);left:12px;z-index:30;
+    position:absolute;top:calc(100% - 4px);left:clamp(18px,4vw,42px);z-index:30;
     display:flex;flex-direction:column;gap:6px;
     min-width:190px;padding:8px;
     background:rgba(11,15,27,.97);border:1px solid var(--glass-border);
@@ -1074,10 +1076,11 @@ body.viewer-open{overflow:hidden}
   .back-btn span:last-child,.fb-toggle .fb-word{display:none}
   /* Icon only: with the label gone, the gap before the count chip — empty
      whenever no filter is set — would leave the glyph sitting off-centre. */
-  /* Past the search field, at the edge: icon-only, it reads as a tool acting on
-     what the search field returns rather than as a second field. */
-  .fb-toggle{order:1;min-width:42px;padding:0 12px;justify-content:center;gap:6px}
+  .fb-toggle{min-width:42px;padding:0 12px;justify-content:center;gap:6px}
   .fb-toggle .fb-n:empty{display:none}
+}
+
+@media (max-width:640px){
   .card-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
   /* The rows stop being boxes so every group becomes a direct flex item of the
      bar: one group per line, and the count/Clear tail can then be ordered last
@@ -1097,8 +1100,10 @@ body.viewer-open{overflow:hidden}
   .tile-sub{font-size:12px}
 }
 
-@media (max-width:460px){
-  .brand span:not(.logo){display:none}
+/* Initials: the full wordmark costs the search field a third of its width. */
+@media (max-width:450px){
+  .brand-full{display:none}
+  .brand-short{display:inline}
 }
 
 @media (prefers-reduced-motion:reduce){
