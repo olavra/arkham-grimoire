@@ -484,20 +484,45 @@
     }
 
     renderFilterbar();               // the pills answer immediately
-    filterbar.classList.add('busy');
+    setBusy(true, busyLabel(codes));
 
     loadCards(codes).then(function (cards) {
       if (token !== state.token) return;
-      filterbar.classList.remove('busy');
       state.cards = cards;
       pruneFilters();
-      renderFilterbar();
+      renderFilterbar();             // rebuilds the chip; the busy flags go with it
+      setBusy(false);
       applyFilters();
     }).catch(function (err) {
       if (token !== state.token) return;
-      filterbar.classList.remove('busy');
+      setBusy(false);
       failure(err);
     });
+  }
+
+  /* Changing the pack selection means a fetch, and the grid keeps showing the
+     old selection until it lands — which reads as a frozen page. The count chip
+     says what is happening and the grid dims to say it is stale. */
+  function setBusy(on, label) {
+    filterbar.classList.toggle('busy', on);
+
+    var grid = document.getElementById('card-grid');
+    if (grid) grid.classList.toggle('grid-busy', on);
+
+    var chip = document.getElementById('count-chip');
+    if (chip && on) {
+      chip.classList.add('loading');
+      chip.innerHTML = '<span class="chip-spin" aria-hidden="true"></span>' + esc(label);
+    }
+    /* Switching off is left to applyFilters, which rewrites the chip with the
+       real count a moment later. */
+    if (chip && !on) chip.classList.remove('loading');
+  }
+
+  function busyLabel(codes) {
+    if (!codes.length) return 'Loading every card…';
+    if (codes.length === 1) return 'Loading ' + packName(codes[0]) + '…';
+    return 'Loading ' + codes.length + ' packs…';
   }
 
   function togglePack(code) {
@@ -635,7 +660,9 @@
         packGroupHtml() +
         facetGroup('Level', 'level', levelFacets(cards), state.levels, false) +
         '<div class="fb-group fb-tail">' +
-          '<span class="chip" id="count-chip">' + cards.length + ' cards</span>' +
+          /* role=status so the count — and the "loading…" that replaces it while
+             a pack is fetched — is announced, not just drawn. */
+          '<span class="chip" id="count-chip" role="status">' + cards.length + ' cards</span>' +
           '<button type="button" class="facet-clear" id="facet-clear" hidden>Clear filters</button>' +
         '</div>' +
       '</div>' +

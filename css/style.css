@@ -189,7 +189,12 @@ a{color:inherit;text-decoration:none}
   padding:0 clamp(18px,4vw,42px) 14px;
   max-height:min(44vh,320px);overflow-y:auto;overscroll-behavior:contain;
 }
-.filterbar.busy{opacity:.5;pointer-events:none}
+/* Editing the pack selection refetches, and the grid below goes on showing the
+   previous selection while it does. Dimming that grid and spinning the count
+   chip is what says so — the bar itself stays live, so a second pack can go in
+   without waiting for the first to land. */
+.filterbar.busy .facet,
+.filterbar.busy .facet-clear{opacity:.55}
 
 /* One row per line of the bar. Packs and Level share the first; Type and Class
    each own one, so a long chip list never reflows around a neighbour. */
@@ -427,6 +432,16 @@ a{color:inherit;text-decoration:none}
   background:rgba(255,255,255,.06);border:1px solid var(--line);
   border-radius:100px;padding:5px 13px;color:var(--ink-3);
 }
+.chip.loading{
+  display:inline-flex;align-items:center;gap:8px;
+  color:var(--ink-2);border-color:rgba(99,102,241,.4);
+}
+/* Shares @keyframes spin with the full-page .spinner. */
+.chip-spin{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--line);border-top-color:var(--indigo-soft);
+  animation:spin .9s linear infinite;
+}
 
 /* ---------- facet toggles ---------- */
 .facet{
@@ -493,6 +508,9 @@ a{color:inherit;text-decoration:none}
   display:grid;gap:clamp(12px,1.4vw,20px);
   grid-template-columns:repeat(auto-fill,minmax(178px,1fr));
 }
+/* Cards on screen while a new pack selection loads: still there to look at,
+   plainly not the answer yet. */
+.card-grid.grid-busy{opacity:.3;pointer-events:none;transition:opacity .2s}
 .card-tile{
   position:relative;
   display:flex;flex-direction:column;gap:10px;
