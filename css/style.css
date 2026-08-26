@@ -197,6 +197,65 @@ a{color:inherit;text-decoration:none}
 .fb-toggle.on{background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.6)}
 .fb-toggle.on .fb-n{color:var(--indigo-soft)}
 
+/* ---------- pick-one menus ---------- */
+/* The header hangs three panels: the pack picker, the language and the sort.
+   They share this surface and these rows — the .pack-picker one predates the
+   class and keeps its own copy. */
+.pop-menu{
+  z-index:25;padding:8px;
+  max-height:min(72vh,470px);overflow-y:auto;overscroll-behavior:contain;
+  background:rgba(11,15,27,.97);border:1px solid var(--glass-border);
+  border-radius:var(--r-md);box-shadow:0 30px 70px rgba(0,0,0,.6);
+  backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+}
+.pop-item{
+  display:flex;width:100%;align-items:center;gap:10px;text-align:left;
+  background:none;border:none;cursor:pointer;color:var(--ink-2);
+  padding:7px 11px;border-radius:9px;
+  font-family:var(--font-body);font-size:13.5px;
+  transition:background .18s,color .18s;
+}
+.pop-item:hover{background:rgba(255,255,255,.07);color:var(--ink)}
+.pop-item:focus-visible{outline:2px solid var(--indigo-soft);outline-offset:-2px}
+.pop-item.on{background:rgba(99,102,241,.16);color:var(--ink)}
+.pop-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop-tick{width:12px;flex-shrink:0;font-size:11px;color:var(--indigo-soft);opacity:0}
+.pop-item.on .pop-tick{opacity:1}
+/* The trailing shorthand: a language code, or what a sort actually orders by. */
+.pop-note{
+  margin-left:auto;flex-shrink:0;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--ink-4);
+}
+.pop-item.on .pop-note{color:var(--indigo-soft)}
+
+/* ---------- card language ---------- */
+/* Trigger is a plain .btn-ghost: the header already has one dropdown, and a
+   second one has no business looking different. */
+.lang{position:relative}
+.lang-btn{gap:9px;padding:0 15px}
+.lang-btn.on{background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.6)}
+.lang-ico{color:var(--ink-3);font-size:11px;line-height:1;transition:color .3s}
+.lang-btn.on .lang-ico{color:var(--indigo-soft)}
+.lang-now{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.14em}
+
+/* Hung off the button's right edge, not the header's left like .pack-picker:
+   this control sits at the end of the bar and a left-anchored panel would run
+   off the window. Eleven languages fit without scrolling at a normal height. */
+.lang-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:196px}
+
+/* ---------- sort ---------- */
+/* Trigger sits in the filter bar, panel does not: .filterbar scrolls its own
+   overflow and would clip anything hanging off its bottom edge — the same
+   reason .pack-picker is a sibling of the bar rather than a child. */
+.fb-sort{position:static}
+.sort-btn{gap:8px}
+.sort-btn .sort-now{color:var(--ink);font-weight:500}
+.sort-caret{font-size:8px;color:var(--ink-4);line-height:1}
+.sort-menu{
+  position:absolute;top:100%;right:clamp(18px,4vw,42px);
+  min-width:210px;
+}
+
 /* ---------- filter bar ---------- */
 /* Capped rather than free-growing: "All Cards" offers every type, class and
    level at once, and the header must not swallow the grid on a narrow window. */
@@ -592,7 +651,34 @@ a{color:inherit;text-decoration:none}
   font-size:14px;align-self:center;flex-shrink:0;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));
 }
-.tile-sub{font-family:var(--font-body);font-size:11px;color:var(--ink-4);margin-top:-4px;padding-left:9px}
+\* Collector number: parked at the end of the name row so long names run out of
+   room before it does. */
+.tile-name .tile-title{min-width:0}
+
+/* Copies in the pack, closing the identifier line. */
+.tile-qty{color:var(--ink-4);opacity:.8;padding-left:2px}
+
+/* Second line of the tile: the identifier, under the name and aligned with it. */
+.tile-meta{
+  display:flex;align-items:baseline;
+  /* Clears the faction glyph so the code lines up with the name, not with the
+     marker beside it. */
+  margin-top:1px;padding-left:20px;min-height:14px;
+}
+.tile-num{
+  display:flex;align-items:baseline;gap:5px;
+  flex-shrink:0;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
+  white-space:nowrap;
+}
+/* The set is context, the number is the answer — the number reads brighter and
+   the set code sits back a step. */
+.tile-pack{
+  color:var(--ink-4);opacity:.8;
+  /* FILM FATALE is the one code that needs clipping; the tooltip has it whole. */
+  max-width:10ch;overflow:hidden;text-overflow:ellipsis;
+}
+.tile-pos{color:var(--ink-3)}
 
 /* ---------- inline 3D cards (grid tiles + detail art) ---------- */
 /* Same construction as the full-screen viewer, shrunk: the stage owns the
@@ -1110,6 +1196,11 @@ body.viewer-open{overflow:hidden}
      whenever no filter is set — would leave the glyph sitting off-centre. */
   .fb-toggle{min-width:42px;padding:0 12px;justify-content:center;gap:6px}
   .fb-toggle .fb-n:empty{display:none}
+
+  /* Code only, same as Filters losing its word: the diamond is decoration and
+     goes first. */
+  .lang-btn{min-width:42px;padding:0 12px;justify-content:center;gap:0}
+  .lang-ico{display:none}
 }
 
 @media (max-width:640px){
@@ -1134,7 +1225,6 @@ body.viewer-open{overflow:hidden}
 @media (max-width:500px){
   .card-grid{grid-template-columns:1fr}
   .tile-name{font-size:15px}
-  .tile-sub{font-size:12px}
 }
 
 /* Initials: the full wordmark costs the search field a third of its width. */

@@ -15,6 +15,10 @@
   var packsBtn = document.getElementById('packs-btn');
   var navToggle = document.getElementById('nav-toggle');
   var navLinks = document.getElementById('nav-links');
+  var langBtn = document.getElementById('lang-btn');
+  var langNow = document.getElementById('lang-now');
+  var langMenu = document.getElementById('lang-menu');
+  var sortMenu = document.getElementById('sort-menu');
   var picker = document.getElementById('pack-picker');
   var pickerQ = document.getElementById('pp-q');
   var pickerList = document.getElementById('pp-list');
@@ -81,6 +85,50 @@
                     'enemy', 'location', 'act', 'agenda', 'scenario', 'story', 'key'];
   var FACTION_ORDER = ['guardian', 'seeker', 'rogue', 'mystic', 'survivor', 'neutral', 'mythos'];
 
+  /* Sort orders. ArkhamDB has no sort parameter — every endpoint hands back the
+     whole payload — so these run here, over the cards already on the heap. Only
+     fields the API actually ships are offered.
+
+     Every comparator falls through to 0 rather than to a tiebreak: Array#sort is
+     stable, so equal cards keep the pack order they arrived in. That makes Pack
+     the second key of every other sort for free. */
+  var SORTS = [
+    /* `note` is the shorthand on the right of each row — only where it says
+       something the label doesn't. */
+    { code: 'pack', label: 'Pack', note: 'SET #', cmp: null },   // the order they arrive in
+    { code: 'name', label: 'Name', note: 'A–Z', cmp: function (a, b) {
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    } },
+    { code: 'level', label: 'Level', note: '0–5', cmp: function (a, b) {
+      return num(a.xp) - num(b.xp);
+    } },
+    { code: 'cost', label: 'Cost', note: '0–9', cmp: function (a, b) {
+      return num(a.cost) - num(b.cost);
+    } },
+    { code: 'faction', label: 'Class', cmp: function (a, b) {
+      return rank(FACTION_ORDER, a.faction_code) - rank(FACTION_ORDER, b.faction_code);
+    } },
+    { code: 'type', label: 'Type', cmp: function (a, b) {
+      return rank(TYPE_ORDER, a.type_code) - rank(TYPE_ORDER, b.type_code);
+    } },
+    { code: 'quantity', label: 'Copies', note: '×4–×1', cmp: function (a, b) {
+      return num(b.quantity) - num(a.quantity);   // most copies first: 4s before 1s
+    } }
+  ];
+
+  /* Cards with no value for the key sort last, whichever way the key runs: a
+     location has no cost, and "no cost" is not "cheapest". */
+  function num(v) { return (v === null || v === undefined) ? Infinity : v; }
+  function rank(order, code) {
+    var i = order.indexOf(code);
+    return i === -1 ? order.length : i;
+  }
+
+  function sortCmp(code) {
+    for (var i = 0; i < SORTS.length; i++) if (SORTS[i].code === code) return SORTS[i].cmp;
+    return null;
+  }
+
   var state = {
     token: 0,        // invalidates in-flight renders when the route changes
     packs: [],       // selected pack codes; empty means "every pack"
@@ -90,6 +138,9 @@
     types: [],       // selected type_codes; empty means "no type filter"
     factions: [],    // selected faction_codes; empty means "no faction filter"
     levels: [],      // selected xp values, as strings; empty means "no level filter"
+    /* A view preference, not a filter: it rides along across packs and routes
+       rather than being remembered per pack the way the facets are. */
+    sort: 'pack',
     observer: null
   };
   var scrollMemory = Object.create(null);
@@ -226,6 +277,19 @@
 
   function packName(code) {
     return packIndex[code] ? packIndex[code].name : code;
+  }
+
+  /* Packs ship no abbreviation, so their code stands in — it is what ArkhamDB
+     prints on the cards themselves and what players quote. The underscore in
+     the handful of two-word codes is not part of that shorthand. */
+  function packAbbr(code) {
+    return String(code || '').replace(/_/g, ' ').toUpperCase();
+  }
+
+  /* The pack name off the card itself, not the index: the grid paints its first
+     batch before the pack list has necessarily landed. */
+  function packLabel(card) {
+    return card.pack_name || packName(card.pack_code);
   }
 
   /* ---------- home: pack list ---------- */
@@ -615,6 +679,58 @@
       '</div>';
   }
 
+  function sortLabel(code) {
+    for (var i = 0; i < SORTS.length; i++) if (SORTS[i].code === code) return SORTS[i].label;
+    return code;
+  }
+
+  /* Seven orders is past what a chip row can carry without taking a line of the
+     header to say something the user sets once — so it collapses to the same
+     panel the language picker uses. */
+  function sortGroupHtml() {
+    return '' +
+      '<div class="fb-group fb-sort">' +
+        '<span class="fb-label">Sort</span>' +
+        '<button type="button" class="facet sort-btn" id="sort-btn"' +
+          ' aria-haspopup="listbox" aria-expanded="false" aria-controls="sort-menu">' +
+          '<span class="sort-now" id="sort-now">' + esc(sortLabel(state.sort)) + '</span>' +
+          '<span class="sort-caret" aria-hidden="true">▼</span>' +
+        '</button>' +
+      '</div>';
+  }
+
+  function buildSortMenu() {
+    if (!sortMenu) return;
+    html(sortMenu, SORTS.map(function (s) {
+      var on = s.code === state.sort;
+      return '<button type="button" class="pop-item' + (on ? ' on' : '') + '"' +
+        ' role="option" aria-selected="' + (on ? 'true' : 'false') + '"' +
+        ' data-sort="' + esc(s.code) + '">' +
+        '<span class="pop-tick" aria-hidden="true">✓</span>' +
+        '<span class="pop-name">' + esc(s.label) + '</span>' +
+        (s.note ? '<span class="pop-note">' + esc(s.note) + '</span>' : '') +
+      '</button>';
+    }).join(''));
+  }
+
+  function closeSort() {
+    if (!sortMenu || sortMenu.hidden) return;
+    sortMenu.hidden = true;
+    var btn = document.getElementById('sort-btn');
+    if (btn) { btn.classList.remove('on'); btn.setAttribute('aria-expanded', 'false'); }
+  }
+
+  function toggleSort() {
+    var open = sortMenu.hidden;
+    if (open) { closePicker(); closeLang(); closeNav(); buildSortMenu(); }
+    sortMenu.hidden = !open;
+    var btn = document.getElementById('sort-btn');
+    if (btn) {
+      btn.classList.toggle('on', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+  }
+
   function packGroupHtml() {
     var pills = state.packs.map(function (code) {
       var name = packName(code);
@@ -665,9 +781,11 @@
         packGroupHtml() +
         facetGroup('Level', 'level', levelFacets(cards), state.levels, false) +
         '<div class="fb-group fb-tail">' +
+          sortGroupHtml() +
           /* role=status so the count — and the "loading…" that replaces it while
              a pack is fetched — is announced, not just drawn. */
-          '<span class="chip" id="count-chip" role="status">' + cards.length + ' cards</span>' +
+          '<span class="chip" id="count-chip" role="status">' +
+            cards.length + ' unique · ' + copies(cards) + ' total</span>' +
           '<button type="button" class="facet-clear" id="facet-clear" hidden>Clear filters</button>' +
         '</div>' +
       '</div>' +
@@ -708,6 +826,15 @@
             state.factions.length + state.levels.length;
     filtersN.textContent = n || '';
     filtersBtn.classList.toggle('on', n > 0);
+  }
+
+  function setSort(code) {
+    closeSort();
+    if (code === state.sort) return;
+    state.sort = code;
+    var now = document.getElementById('sort-now');
+    if (now) now.textContent = sortLabel(code);
+    applyFilters();
   }
 
   function clearFacets() {
@@ -771,6 +898,8 @@
   }
 
   function openPicker() {
+    closeSort();
+    closeLang();
     picker.hidden = false;
     var add = document.getElementById('fb-add');
     if (add) add.setAttribute('aria-expanded', 'true');
@@ -805,7 +934,7 @@
     var open = !navLinks.classList.contains('open');
     navLinks.classList.toggle('open', open);
     navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) closePicker();          // both hang off the header; one at a time
+    if (open) { closePicker(); closeSort(); closeLang(); }   // one panel at a time
   }
 
   /* ---------- filtering ---------- */
@@ -816,6 +945,22 @@
     if (state.factions.length && state.factions.indexOf(card.faction_code) === -1) return false;
     if (state.levels.length && state.levels.indexOf(String(card.xp)) === -1) return false;
     return matches(card, state.query);
+  }
+
+  /* Two different questions, and a pack answers them differently: the Core Set
+     lists 183 distinct cards but 265 pieces of cardboard, because a card the
+     pack ships four of is still one card. */
+  function copies(list) {
+    var n = 0;
+    for (var i = 0; i < list.length; i++) n += list[i].quantity > 0 ? list[i].quantity : 1;
+    return n;
+  }
+
+  function countLabel(narrowed) {
+    var uniq = state.filtered.length, tot = copies(state.filtered);
+    if (!narrowed) return uniq + ' unique · ' + tot + ' total';
+    return uniq + '/' + state.cards.length + ' unique · ' +
+           tot + '/' + copies(state.cards) + ' total';
   }
 
   function applyFilters() {
@@ -831,17 +976,15 @@
     }
 
     state.filtered = state.cards.filter(passes);
+    var cmp = sortCmp(state.sort);
+    if (cmp) state.filtered.sort(cmp);   // filter() already made a copy of its own
     state.shown = 0;
     grid.innerHTML = '';
 
     var facets = state.types.length + state.factions.length + state.levels.length;
 
     var chip = document.getElementById('count-chip');
-    if (chip) {
-      chip.textContent = (state.query || facets)
-        ? state.filtered.length + ' of ' + state.cards.length + ' cards'
-        : state.cards.length + ' cards';
-    }
+    if (chip) chip.textContent = countLabel(state.query || facets);
 
     var clearBtn = document.getElementById('facet-clear');
     if (clearBtn) clearBtn.hidden = !facets;
@@ -870,7 +1013,6 @@
 
   function tileHtml(card) {
     var fac = facClass(card.faction_code);
-    var sub = card.subname || '';
     /* Front face only: a tile never rotates past 90°, so the reverse would be
        a second image request for pixels nobody sees. */
     var art = Card3D.html(card, { lazy: true, 'class': 'tile-img' }) ||
@@ -888,15 +1030,37 @@
         'drawn or added to a deck on its own">Hidden</span>'
       : '';
 
+    /* Collector number, and the set it counts within — a bare "#1" is not an
+       identifier, the whole pool holds one per pack. The pack code is the
+       abbreviation ArkhamDB itself uses; the tooltip spells the set out and
+       adds the card code, which is the one value that is unique pool-wide. */
+    /* How many copies the pack holds — part of the identifier line, not the
+       name: "CORE #2 ×3" is one fact about the printing, read in one go. */
+    var qty = card.quantity > 0
+      ? '<span class="tile-qty">×' + card.quantity + '</span>'
+      : '';
+
+    var num = (card.position || card.position === 0)
+      ? '<span class="tile-num" title="' + esc(packLabel(card)) + ' #' +
+          esc(String(card.position)) + ' · ' + esc(card.code) +
+          (card.quantity > 0 ? ' · ' + card.quantity + ' copies in the pack' : '') + '">' +
+          '<span class="tile-pack">' + esc(packAbbr(card.pack_code)) + '</span>' +
+          '<span class="tile-pos">#' + esc(String(card.position)) + '</span>' +
+          qty +
+        '</span>'
+      : '';
+
     return '' +
       '<a class="card-tile' + (Faces.isHidden(card) ? ' is-hidden' : '') +
         '" href="#/card/' + esc(card.code) + '">' +
         art + flag +
         '<div class="tile-name">' +
           facMark +
-          '<span>' + esc(card.name) + '</span>' +
+          '<span class="tile-title">' + esc(card.name) + '</span>' +
         '</div>' +
-        (sub ? '<div class="tile-sub">' + esc(sub) + '</div>' : '') +
+        /* No subtitle: "The Fed" under Roland Banks costs a line and answers
+           nothing you came to the grid for. */
+        '<div class="tile-meta">' + num + '</div>' +
       '</a>';
   }
 
@@ -1386,12 +1550,69 @@
     root.style.scrollBehavior = previous;
   }
 
+  /* ---------- card language ---------- */
+
+  /* ArkhamDB keeps every translation on its own subdomain, so the picker really
+     chooses which host the app talks to. API.setLocale drops its caches; these
+     are the copies this layer kept, and they have to go with them. */
+  /* The button carries the code, the panel the native name: two letters keep the
+     trigger the same width in every language, and "Українська" would not have
+     fit the bar anyway. */
+  function buildLangPicker() {
+    if (!langMenu) return;
+    var current = API.getLocale();
+    html(langMenu, API.locales.map(function (l) {
+      var on = l.code === current;
+      return '<button type="button" class="pop-item' + (on ? ' on' : '') + '"' +
+        ' role="option" aria-selected="' + (on ? 'true' : 'false') + '"' +
+        ' data-code="' + esc(l.code) + '">' +
+        '<span class="pop-tick" aria-hidden="true">✓</span>' +
+        '<span class="pop-name">' + esc(l.label) + '</span>' +
+        '<span class="pop-note">' + esc(l.code.toUpperCase()) + '</span>' +
+      '</button>';
+    }).join(''));
+    if (langNow) langNow.textContent = current.toUpperCase();
+  }
+
+  function closeLang() {
+    if (!langMenu || langMenu.hidden) return;
+    langMenu.hidden = true;
+    langBtn.classList.remove('on');
+    langBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleLang() {
+    var open = langMenu.hidden;
+    if (open) { closePicker(); closeSort(); closeNav(); }   // all hang off the header
+    langMenu.hidden = !open;
+    langBtn.classList.toggle('on', open);
+    langBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function changeLang(code) {
+    closeLang();
+    if (!API.setLocale(code)) return;
+
+    homeData = null;
+    packList = [];
+    packIndex = Object.create(null);
+    pickerBuilt = false;      // pack names in the picker are translated too
+    state.cards = [];
+    state.filtered = [];
+    /* Facet memory is codes, not labels, so it survives — the chips a pack was
+       left on still mean the same thing in the new language. */
+    buildLangPicker();
+    route();
+  }
+
   /* ---------- router ---------- */
 
   function route() {
     if (state.observer) { state.observer.disconnect(); state.observer = null; }
     Viewer.close();   // a back/forward press while the preview is open should dismiss it
     closePicker();
+    closeSort();
+    closeLang();
     closeNav();
 
     var current = location.hash || '#/';
@@ -1493,7 +1714,7 @@
     filtersOpen = !filtersOpen;
     filterbar.hidden = !filtersOpen;
     filtersBtn.setAttribute('aria-expanded', filtersOpen ? 'true' : 'false');
-    if (!filtersOpen) closePicker();
+    if (!filtersOpen) { closePicker(); closeSort(); }   // their triggers just left
     syncHeadHeight();
   });
 
@@ -1508,6 +1729,9 @@
     /* Styled as a facet but wired to its own flag, so it has to be caught
        before the generic facet branch below. */
     if (e.target.closest('.toggle-replaced')) { toggleReplaced(); return; }
+
+    /* Styled as a facet, so it has to be caught before the generic branch. */
+    if (e.target.closest('#sort-btn')) { toggleSort(); return; }
 
     var btn = e.target.closest('.facet');
     if (!btn) return;
@@ -1536,6 +1760,21 @@
 
   navToggle.addEventListener('click', toggleNav);
 
+  if (langBtn && langMenu) {
+    langBtn.addEventListener('click', toggleLang);
+    langMenu.addEventListener('click', function (e) {
+      var item = e.target.closest('.pop-item');
+      if (item) changeLang(item.dataset.code);
+    });
+  }
+
+  if (sortMenu) {
+    sortMenu.addEventListener('click', function (e) {
+      var item = e.target.closest('.pop-item');
+      if (item) setSort(item.dataset.sort);
+    });
+  }
+
   /* Tapping the section you are already on routes nowhere, so the menu has to
      shut itself rather than wait for a hashchange. */
   navLinks.addEventListener('click', function (e) {
@@ -1545,12 +1784,16 @@
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     if (!picker.hidden) closePicker();
+    closeSort();
+    closeLang();
     closeNav();
   });
 
   document.addEventListener('pointerdown', function (e) {
     if (!picker.hidden &&
         !e.target.closest('#pack-picker') && !e.target.closest('#fb-add')) closePicker();
+    if (!e.target.closest('#sort-menu') && !e.target.closest('#sort-btn')) closeSort();
+    if (!e.target.closest('#lang-wrap')) closeLang();
     if (!e.target.closest('#nav-links') && !e.target.closest('#nav-toggle')) closeNav();
   });
 
@@ -1565,6 +1808,7 @@
   window.addEventListener('hashchange', route);
 
   if (!location.hash) location.replace('#/');
+  buildLangPicker();
   syncHeadHeight();
   route();
 })();

@@ -66,6 +66,20 @@
           <path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>
         </svg><span class="fb-word">Filters</span><span class="fb-n" id="filters-n"></span>
       </button>
+      <!-- ArkhamDB keeps each translation on its own subdomain, so this picks
+           the host every card request goes to. A panel rather than a <select>:
+           the native dropdown is painted by the OS and lands in the middle of
+           the glass header looking like nothing else on the page. Options come
+           from API.locales. -->
+      <div class="lang" id="lang-wrap">
+        <button type="button" class="btn-ghost lang-btn" id="lang-btn"
+                aria-label="Card language" aria-haspopup="listbox"
+                aria-expanded="false" aria-controls="lang-menu">
+          <span class="lang-ico" aria-hidden="true">◈</span>
+          <span class="lang-now" id="lang-now"></span>
+        </button>
+        <div class="pop-menu lang-menu" id="lang-menu" role="listbox" aria-label="Card language" hidden></div>
+      </div>
     </div>
   </div>
 
@@ -87,6 +101,11 @@
     </div>
     <div class="pp-list" id="pp-list"></div>
   </div>
+
+  <!-- Sibling of .filterbar for the same reason as the pack picker: its trigger
+       lives inside the bar, but a panel parented to it would be clipped by the
+       bar's own overflow. -->
+  <div class="pop-menu sort-menu" id="sort-menu" role="listbox" aria-label="Sort by" hidden></div>
 </header>
 
 <main id="view" class="view" aria-live="polite"></main>
