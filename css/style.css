@@ -302,8 +302,11 @@ a{color:inherit;text-decoration:none}
   max-width:1560px;margin:0 auto;
 }
 
+/* Below .view rather than level with it: the two never overlap in flow, but the
+   footer is the later sibling, so at an equal z-index it would paint over — and
+   swallow taps meant for — the Ask Claude bubble fixed above it. */
 .footline{
-  position:relative;z-index:10;
+  position:relative;z-index:9;
   padding:0 clamp(18px,4vw,42px) 34px;
   font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--ink-4);
@@ -1034,6 +1037,35 @@ body.viewer-open{overflow:hidden}
   margin:34px auto 0;display:block;
 }
 
+/* ---------- Ask Claude bubble ---------- */
+/* Lives inside .view, which is its own stacking context at z-index 10, so this
+   sits above the rest of the card detail and still below the 3D viewer —
+   inspecting the art covers the bubble rather than fighting it. The bottom
+   inset clears the iOS home indicator; env() resolves to 0 everywhere else. */
+.ask-claude{
+  position:fixed;z-index:90;
+  right:clamp(16px,4vw,32px);
+  bottom:calc(clamp(16px,4vw,32px) + env(safe-area-inset-bottom,0px));
+  display:inline-flex;align-items:center;justify-content:center;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--grad-b);color:#fff;text-decoration:none;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 14px 40px rgba(99,102,241,.42),0 4px 14px rgba(0,0,0,.45);
+  transition:transform .3s var(--ee),box-shadow .3s var(--ee);
+  -webkit-tap-highlight-color:transparent;
+}
+.ask-claude:hover{
+  transform:translateY(-2px);
+  box-shadow:0 20px 52px rgba(99,102,241,.55),0 6px 18px rgba(0,0,0,.5);
+}
+.ask-claude:active{transform:translateY(0)}
+.ask-claude:focus-visible{outline:2px solid var(--indigo-soft);outline-offset:3px}
+/* Inlined by js/askclaude.js from img/ai.svg, the same way .nav-ico and .fb-ico
+   are inlined: a one-path button glyph does not need a second request, a MIME
+   type and a cache entry to go wrong. fill:currentColor takes the button's
+   white. Height follows the asset's 506:342 viewBox. */
+.ask-ico{width:28px;height:19px;flex-shrink:0;fill:currentColor}
+
 /* ---------- responsive ---------- */
 @media (max-width:900px){
   .detail{grid-template-columns:1fr}
@@ -1090,6 +1122,11 @@ body.viewer-open{overflow:hidden}
   .fb-row{display:contents}
   .fb-tail{order:1;margin-left:0;gap:12px}
   .pack-picker{left:12px;width:calc(100vw - 24px)}
+
+  /* Room under the last line for the Ask Claude bubble. On a wide window the
+     credit sits far to the left of it; at this width the two share the row and
+     the bubble would otherwise cover the end of the sentence. */
+  .footline{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 }
 
 /* Phone: one card per row. Two columns of ~180px each render the art too small
@@ -1104,6 +1141,10 @@ body.viewer-open{overflow:hidden}
 @media (max-width:450px){
   .brand-full{display:none}
   .brand-short{display:inline}
+
+  /* A little smaller, but not below the ~44px a thumb needs. */
+  .ask-claude{width:52px;height:52px}
+  .ask-ico{width:26px;height:18px}
 }
 
 @media (prefers-reduced-motion:reduce){

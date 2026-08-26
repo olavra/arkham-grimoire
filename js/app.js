@@ -1319,7 +1319,12 @@
             '<div class="meta-grid">' + meta + '</div>' +
           '</div>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+
+      /* Fixed to the viewport, so it sits outside the grid rather than in a
+         column of it. Being part of this markup is what scopes it to the
+         route: the next render replaces the view and the bubble goes with it. */
+      AskClaude.bubbleHtml(card);
   }
 
   /* When the reverse is a card of its own, the button names it — the flip is the
