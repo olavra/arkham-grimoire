@@ -404,8 +404,8 @@
   function packCardHtml(p) {
     var count = p.known || 0;
     var released = releaseDate(p.available);
-    /* Covers are keyed by FFG product code, so packs FFG never boxed on their
-       own (novellas, side stories) simply render without one. */
+    /* Covers are keyed by pack code but named after the FFG product where one
+       exists; packs with no art on file simply render without a cover. */
     var cover = PackCovers.url(p.code);
     var ffg = PackCovers.ffgCode(p.code);
     return '' +

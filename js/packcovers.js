@@ -1,12 +1,14 @@
-/* FFG product code -> pack cover art.
+/* Pack cover art.
 
-   ArkhamDB has no field for the FFG SKU (AHC##), and the cover files in
+   ArkhamDB has no field for the FFG SKU (AHC##), and most cover files in
    img/packs/ are named after it, so the link between an ArkhamDB pack code
-   and its cover has to live here. Keyed by ArkhamDB pack `code`.
+   and its cover has to live here. Both maps below are keyed by ArkhamDB
+   pack `code`.
 
    Most entries were matched on pack name; the ones name-matching cannot
    reach are noted inline. To add a cover: drop the PNG in img/packs/ under
-   its FFG name and add a row below. */
+   its FFG name and add a row to COVERS, or — for a pack FFG never gave a
+   SKU — name it after the pack code and add a row to CODE_COVERS. */
 (function (global) {
   'use strict';
 
@@ -122,17 +124,36 @@
     'film_fatale': ['AHC85', 'AHC85 - Film Fatale.png']
   };
 
+  /* Covers named after the ArkhamDB pack code, uppercased. FFG sold the
+     novellas and the promo cards without an AHC## SKU, so there is no FFG
+     name to file them under. */
+  var CODE_COVERS = {
+    'hoth': 'HOTH.png',                                                         // Hour of the Huntress
+    'iotv': 'IOTV.png',                                                         // Ire of the Void
+    'tdor': 'TDOR.png',                                                         // The Dirge of Reason
+    'tftbw': 'TFTBW.png',                                                       // To Fight the Black Wind
+    'tdg': 'TDG.png',                                                           // The Deep Gate
+    'bob': 'BOB.png',                                                           // Blood of Baalshandor
+    'dre': 'DRE.png',                                                           // Dark Revelations
+
+    'blbe': 'BLBE.png',                                                         // The Blob That Ate Everything ELSE!
+    'promo': 'PROMO.png'
+  };
+
   /* Covers on disk with no ArkhamDB pack to hang them on — not carried by the
      API yet, or never carried at all:
        AHC106   Children of Blood
        PAHC01   Barkham Horror - The Meddling of Meowlathotep
-     Packs with no cover art on disk (novellas, parallel-investigator side
-     stories, promos, Blob ELSE!) fall through to url() returning null. */
+     Packs with no cover art on disk (the remaining novellas, parallel-
+     investigator side stories, Books) fall through to url() returning
+     null. */
 
   /* 'img/packs/AHC01%20-%20….png', or null when the pack has no art. */
   function url(packCode) {
     var row = COVERS[packCode];
-    return row ? DIR + encodeURIComponent(row[1]) : null;
+    if (row) return DIR + encodeURIComponent(row[1]);
+    var file = CODE_COVERS[packCode];
+    return file ? DIR + encodeURIComponent(file) : null;
   }
 
   /* FFG product code, e.g. 'AHC60' for 'rcore'. */
