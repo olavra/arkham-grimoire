@@ -1707,12 +1707,13 @@ body.viewer-open{overflow:hidden}
     font-size:12.5px;letter-spacing:.2em;color:var(--ink-3);
   }
 
-  /* Clear filters closes the rail, under the counts in the same strip. It only
-     shows while a filter is set, so the strip grows to hold it only then. */
+  /* Clear filters sits in the rail's foot, above the counts in the same strip.
+     It only shows while a filter is set, so the strip grows to hold it only
+     then, and the counts stay on the bottom line either way. */
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) #facet-clear{
-    position:fixed;left:22px;bottom:18px;z-index:4;margin:0;
+    position:fixed;left:22px;bottom:50px;z-index:4;margin:0;
   }
-  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])):has(#facet-clear:not([hidden])) #count-chip{padding-bottom:52px}
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])):has(#facet-clear:not([hidden])) #count-chip{padding-top:50px}
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])):has(#facet-clear:not([hidden])) .filterbar{padding-bottom:108px}
 
   /* The page steps right of the rail. */
