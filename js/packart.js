@@ -9,11 +9,20 @@
   var DIR = 'img/packs-art/';
 
   var TILES = {
+    'core_2026': 'tiles/core_2026.jpg',
     'dwlc': 'tiles/dwlc.jpg',
     'dwlp': 'tiles/dwlp.jpg',
     'eoec': 'tiles/eoec.jpg',
     'eoep': 'tiles/eoep.jpg',
+    'fhvc': 'tiles/fhvc.jpg',
+    'ptcc': 'tiles/ptcc.jpg',
     'rcore': 'tiles/rcore.jpg',
+    'tcuc': 'tiles/tcuc.jpg',
+    'tdcc': 'tiles/tdcc.jpg',
+    'tdec': 'tiles/tdec.jpg',
+    'tfac': 'tiles/tfac.jpg',
+    'ticc': 'tiles/ticc.jpg',
+    'tskc': 'tiles/tskc.jpg',
   };
 
   /* Absolute, like GameIcons: the URL travels through a CSS custom
