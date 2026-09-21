@@ -148,7 +148,9 @@ a{color:inherit;text-decoration:none}
   /* The bottom 40px belong to the ornamental rule, drawn under "ornament". */
   padding:0 clamp(26px,5vw,72px) 12px;
 }
-.topbar-nav{display:flex;align-items:center;gap:14px;min-width:0}
+/* The left block takes whatever the bar has spare, so the search field beside
+   the brand can grow into it; the tools on the right keep their own width. */
+.topbar-nav{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 auto}
 /* Wide enough for the links themselves: no menu, no button. */
 .nav-links{display:contents}
 /* Two classes, not one: .btn-ghost sets display:inline-flex further down the
@@ -194,7 +196,11 @@ a{color:inherit;text-decoration:none}
 }
 .brand-short .slash{display:inline;font-size:1em;letter-spacing:.04em;color:var(--accent-soft)}
 
-.topbar-tools{display:flex;align-items:center;gap:10px}
+.topbar-tools{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+/* Beside the brand the field grows with the bar, up to a width worth typing in
+   and no further: past that it would only push the section links away. */
+.topbar-nav .search{flex:1 1 320px;max-width:460px;min-width:0}
+.topbar-nav .search input{width:100%;min-width:0}
 
 /* The site's buttons: an oval in a brass hairline with a second, fainter oval
    set inside it. The inner one is an inset shadow so it follows any width. */
@@ -1568,10 +1574,8 @@ body.viewer-open{overflow:hidden}
   /* Search gives up its width first: shrinking the field keeps the brand and
      the Filters button in place rather than shoving them off the edge. */
   .topbar{gap:12px}
-  .topbar-nav{gap:10px;flex:0 1 auto}
-  .topbar-tools{flex:1;min-width:0;justify-content:flex-end}
-  .search{flex:0 1 auto;min-width:0;padding:0 13px}
-  .search input{width:100%;min-width:0}
+  .topbar-nav{gap:10px}
+  .topbar-nav .search{padding:0 13px}
 }
 
 /* Below this the brand, both section links and a search field worth typing in
@@ -1579,10 +1583,9 @@ body.viewer-open{overflow:hidden}
    rather than shrink. They move behind the hamburger instead. */
 @media (max-width:730px){
   .topbar{gap:8px}
-  .topbar-nav{gap:8px;flex:0 0 auto}
-  .topbar-tools{flex:1;min-width:0;justify-content:flex-end}
-  .search{flex:1 1 auto;min-width:0;padding:0 12px}
-  .search input{width:100%;min-width:0}
+  .topbar-nav{gap:8px}
+  /* With the links behind the hamburger the field can have the whole gap. */
+  .topbar-nav .search{max-width:none;padding:0 12px}
 
   .btn-ghost.nav-toggle{display:inline-flex;min-width:42px;padding:0 12px;justify-content:center}
   .nav-links{
