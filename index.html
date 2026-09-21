@@ -20,8 +20,8 @@
 <div class="grid-overlay" aria-hidden="true"></div>
 
 <header class="site-head" id="site-head">
-  <!-- Fixed order, every route: brand, search and navigation left; Filters and
-       language right. Route changes only ever hide a control, never move one. -->
+  <!-- Fixed order, every route: brand, search, language and navigation left;
+       Filters right. Route changes only ever hide a control, never move one. -->
   <div class="topbar">
     <div class="topbar-nav">
       <!-- Narrow windows only: the two section links fold into this menu so the
@@ -46,6 +46,21 @@
         <span class="search-ico" aria-hidden="true">⌕</span>
         <input type="search" id="search" placeholder="Search all cards…" autocomplete="off" spellcheck="false" aria-label="Search all cards">
       </label>
+      <!-- Beside the search, because it decides what the search finds: ArkhamDB
+           keeps each translation on its own subdomain, so this picks the host
+           every card request goes to. A panel rather than a <select>:
+           the native dropdown is painted by the OS and lands in the middle of
+           the glass header looking like nothing else on the page. Options come
+           from API.locales. -->
+      <div class="lang" id="lang-wrap">
+        <button type="button" class="btn-ghost lang-btn" id="lang-btn"
+                aria-label="Card language" aria-haspopup="listbox"
+                aria-expanded="false" aria-controls="lang-menu">
+          <span class="lang-ico" aria-hidden="true">◈</span>
+          <span class="lang-now" id="lang-now"></span>
+        </button>
+        <div class="pop-menu lang-menu" id="lang-menu" role="listbox" aria-label="Card language" hidden></div>
+      </div>
       <!-- display:contents while there is room, so the links sit in the bar
            exactly as they did; a dropdown panel once there isn't. -->
       <div class="nav-links" id="nav-links">
@@ -66,20 +81,6 @@
           <path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>
         </svg><span class="fb-word">Filters</span><span class="fb-n" id="filters-n"></span>
       </button>
-      <!-- ArkhamDB keeps each translation on its own subdomain, so this picks
-           the host every card request goes to. A panel rather than a <select>:
-           the native dropdown is painted by the OS and lands in the middle of
-           the glass header looking like nothing else on the page. Options come
-           from API.locales. -->
-      <div class="lang" id="lang-wrap">
-        <button type="button" class="btn-ghost lang-btn" id="lang-btn"
-                aria-label="Card language" aria-haspopup="listbox"
-                aria-expanded="false" aria-controls="lang-menu">
-          <span class="lang-ico" aria-hidden="true">◈</span>
-          <span class="lang-now" id="lang-now"></span>
-        </button>
-        <div class="pop-menu lang-menu" id="lang-menu" role="listbox" aria-label="Card language" hidden></div>
-      </div>
     </div>
   </div>
 

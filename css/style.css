@@ -201,6 +201,7 @@ a{color:inherit;text-decoration:none}
    and no further: past that it would only push the section links away. */
 .topbar-nav .search{flex:1 1 320px;max-width:460px;min-width:0}
 .topbar-nav .search input{width:100%;min-width:0}
+.topbar-nav .lang{flex:0 0 auto}
 
 /* The site's buttons: an oval in a brass hairline with a second, fainter oval
    set inside it. The inner one is an inset shadow so it follows any width. */
@@ -1658,8 +1659,9 @@ body.viewer-open{overflow:hidden}
 @media (min-width:1024px){
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])){--rail-w:300px}
   /* A backdrop-filter makes the header the containing block of anything fixed
-     inside it; the rail has to be fixed to the window, not to the bar. */
-  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .site-head{backdrop-filter:none;-webkit-backdrop-filter:none}
+     inside it; the rail and its tab have to be fixed to the window, not to the
+     bar — the tab also when the rail is folded, hence the card-route selector. */
+  body:has(#filters-toggle:not([hidden])) .site-head{backdrop-filter:none;-webkit-backdrop-filter:none}
 
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .filterbar{
     position:fixed;top:var(--topbar-h);left:0;bottom:0;z-index:2;
@@ -1672,8 +1674,16 @@ body.viewer-open{overflow:hidden}
   /* The search heads the rail, over the filter bar's top padding. */
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .topbar-nav .search{
     position:fixed;top:calc(var(--topbar-h) + 22px);left:22px;z-index:3;
-    width:calc(var(--rail-w) - 44px);max-width:none;
+    width:calc(var(--rail-w) - 44px - 64px);max-width:none;
   }
+  /* The language shares the search's row: it decides what the search finds.
+     Its menu hangs from its right edge, so it opens inside the rail. */
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .topbar-nav .lang{
+    position:fixed;top:calc(var(--topbar-h) + 22px);z-index:3;
+    left:calc(var(--rail-w) - 22px - 56px);
+  }
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .lang-btn{width:56px;min-width:0;padding:0;justify-content:center;gap:0}
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .lang-ico{display:none}
 
   /* One group under another, each label on its own line above its chips. */
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .fb-groups{gap:24px;padding-top:0}
@@ -1695,6 +1705,30 @@ body.viewer-open{overflow:hidden}
     position:fixed;top:calc(var(--topbar-h) + 14px);right:auto;
     left:calc(var(--rail-w) + 10px)!important;
   }
+
+  /* Filters only folds the rail now, so it is drawn as a tab on the rail's
+     edge, halfway down; folded, the tab waits at the window's edge. Its funnel,
+     word and count give way to a chevron that points the way it will move. */
+  body:has(#filters-toggle:not([hidden])) #filters-toggle{
+    position:fixed;top:50%;left:0;z-index:6;
+    width:24px;height:78px;min-width:0;padding:0;gap:0;
+    transform:translateY(-50%);justify-content:center;
+    border-left:0;border-radius:0 14px 14px 0;
+    background:rgba(13,19,23,.97);
+    box-shadow:6px 0 18px rgba(0,0,0,.4),inset 0 0 0 3px var(--bg),inset 0 0 0 4px var(--line-2);
+    /* No transition on left: the rail appears and folds at once, and the
+       value it would animate from is --rail-w, which is gone once folded. */
+    transition:border-color .3s,box-shadow .3s;
+  }
+  body:has(#filters-toggle:not([hidden])) #filters-toggle > *{display:none}
+  body:has(#filters-toggle:not([hidden])) #filters-toggle::before{
+    content:'';width:0;height:0;
+    border-left:6px solid var(--brass);
+    border-top:5px solid transparent;border-bottom:5px solid transparent;
+  }
+  body:has(#filters-toggle:not([hidden])) #filters-toggle:hover{border-color:var(--brass)}
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) #filters-toggle{left:var(--rail-w)}
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) #filters-toggle::before{border-left:0;border-right:6px solid var(--brass)}
 }
 
 @media (prefers-reduced-motion:reduce){
