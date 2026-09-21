@@ -400,7 +400,7 @@
         body += '' +
           '<section class="cycle" data-cycle="' + esc(String(cyc)) + '">' +
             '<header class="section-head">' +
-              '<span class="cy-title">' + esc(label) + '</span>' +
+              '<span class="cy-title" title="' + esc(label) + '">' + esc(label) + '</span>' +
               '<span class="mono-tag">Cycle ' + esc(String(cyc)) + ' — ' + group.length +
                 (group.length === 1 ? ' pack' : ' packs') + '</span>' +
             '</header>' +
