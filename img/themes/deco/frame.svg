@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Deco panel frame, cut for border-image with a 48px slice: every ornament
+     lives inside a corner square, the edges are plain double rules so the
+     middle slices can stretch to any size. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="420" viewBox="0 0 300 420" fill="none">
+  <g stroke="#c9a961" stroke-linecap="square">
+    <!-- outer keyline -->
+    <rect x="6.5" y="6.5" width="287" height="407" stroke-width="1.6"/>
+    <!-- inner hairline -->
+    <rect x="13.5" y="13.5" width="273" height="393" stroke-width=".7" opacity=".55"/>
+
+    <!-- ziggurat brackets, one per corner -->
+    <g stroke-width="1.4">
+      <path d="M6.5 40V26h8v-8h8v-6"/>
+      <path d="M293.5 40V26h-8v-8h-8v-6"/>
+      <path d="M6.5 380v14h8v8h8v6"/>
+      <path d="M293.5 380v14h-8v8h-8v6"/>
+    </g>
+
+    <!-- corner fans -->
+    <g stroke-width=".9" opacity=".8">
+      <path d="M20 20l12 12M20 26l7 7M26 20l7 7"/>
+      <path d="M280 20l-12 12M280 26l-7 7M274 20l-7 7"/>
+      <path d="M20 400l12-12M20 394l7-7M26 400l7-7"/>
+      <path d="M280 400l-12-12M280 394l-7-7M274 400l-7-7"/>
+    </g>
+  </g>
+
+  <!-- corner studs -->
+  <g fill="#c9a961">
+    <rect x="17" y="17" width="3" height="3"/>
+    <rect x="280" y="17" width="3" height="3"/>
+    <rect x="17" y="400" width="3" height="3"/>
+    <rect x="280" y="400" width="3" height="3"/>
+  </g>
+</svg>

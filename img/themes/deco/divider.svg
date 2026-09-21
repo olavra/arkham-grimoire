@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Section rule: a stepped lozenge with a fan on either side, tapering out to
+     thin lines that end in a tick. Drawn at its own size and centred. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="36" viewBox="0 0 560 36" fill="none">
+  <g stroke="#c9a961" stroke-linecap="square">
+    <!-- the long rules -->
+    <g stroke-width="1.3">
+      <path d="M8 18h222M330 18h222"/>
+    </g>
+    <g stroke-width=".7" opacity=".5">
+      <path d="M40 22h190M330 22h190"/>
+    </g>
+    <!-- end ticks -->
+    <g stroke-width="1.3">
+      <path d="M8 12v12M552 12v12"/>
+      <path d="M16 15v6M544 15v6"/>
+    </g>
+    <!-- fans flanking the centre -->
+    <g stroke-width="1" opacity=".85">
+      <path d="M240 18l-10-8M246 18l-8-11M252 18l-5-13"/>
+      <path d="M320 18l10-8M314 18l8-11M308 18l5-13"/>
+    </g>
+    <!-- stepped lozenge -->
+    <g stroke-width="1.4">
+      <path d="M280 4l16 14-16 14-16-14z"/>
+      <path d="M280 10l9 8-9 8-9-8z" stroke-width=".8" opacity=".7"/>
+    </g>
+  </g>
+  <rect x="277" y="15" width="6" height="6" transform="rotate(45 280 18)" fill="#c9a961"/>
+</svg>

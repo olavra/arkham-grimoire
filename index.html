@@ -6,11 +6,11 @@
 <title>Arkham Grimoire</title>
 <meta name="description" content="Browse the complete Arkham Horror: The Card Game collection, powered by the ArkhamDB API.">
 <link rel="icon" href="img/ico.svg" type="image/svg+xml">
-<link rel="mask-icon" href="img/ico.svg" color="#6366f1">
-<meta name="theme-color" content="#0a0e1a">
+<link rel="mask-icon" href="img/ico.svg" color="#24827b">
+<meta name="theme-color" content="#0d1317">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=EB+Garamond:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/arkham-icons.css">
 </head>
@@ -106,6 +106,7 @@
        lives inside the bar, but a panel parented to it would be clipped by the
        bar's own overflow. -->
   <div class="pop-menu sort-menu" id="sort-menu" role="listbox" aria-label="Sort by" hidden></div>
+  <div class="pop-menu sort-menu" id="group-menu" role="listbox" aria-label="Group by" hidden></div>
 </header>
 
 <main id="view" class="view" aria-live="polite"></main>
@@ -118,6 +119,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/packcovers.js"></script>
+<script src="js/gameicons.js"></script>
 <script src="js/markup.js"></script>
 <script src="js/cardback.js"></script>
 <script src="js/faces.js"></script>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Button plate, stadium cut: a rounded outline doubled by a hairline, with a
+     fan at each end and a stud where the fan meets the rule. Sliced at 60px for
+     border-image, so the round ends keep their shape and only the straight
+     middle stretches with the label. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="56" viewBox="0 0 280 56" fill="none">
+  <rect x="3" y="3" width="274" height="50" rx="25" fill="#0f1a18" fill-opacity=".85"/>
+  <g stroke="#c9a961">
+    <rect x="3" y="3" width="274" height="50" rx="25" stroke-width="1.5"/>
+    <rect x="8" y="8" width="264" height="40" rx="20" stroke-width=".7" opacity=".6"/>
+
+    <!-- fans, one per end -->
+    <g stroke-width=".9" opacity=".9">
+      <path d="M30 28h-14M31 22l-12-7M31 34l-12 7M33 17l-8-11M33 39l-8 11"/>
+      <path d="M250 28h14M249 22l12-7M249 34l12 7M247 17l8-11M247 39l8 11"/>
+    </g>
+  </g>
+  <g fill="#c9a961">
+    <circle cx="33" cy="28" r="3"/>
+    <circle cx="247" cy="28" r="3"/>
+  </g>
+</svg>

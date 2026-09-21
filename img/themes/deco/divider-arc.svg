@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Section rule: two lines that bow gently away from a ringed medallion and
+     finish in a small circle at each end. Drawn at its own size and centred. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="48" viewBox="0 0 560 48" fill="none">
+  <g stroke="#c9a961" stroke-linecap="round">
+    <!-- bowed rules -->
+    <g stroke-width="1.3">
+      <path d="M14 24C90 24 160 18 236 18"/>
+      <path d="M546 24c-76 0-146-6-222-6"/>
+    </g>
+    <g stroke-width=".7" opacity=".5">
+      <path d="M40 29c72 0 140-5 196-5"/>
+      <path d="M520 29c-72 0-140-5-196-5"/>
+    </g>
+    <!-- end rings -->
+    <g stroke-width="1.2">
+      <circle cx="10" cy="24" r="4"/>
+      <circle cx="550" cy="24" r="4"/>
+    </g>
+    <!-- medallion -->
+    <circle cx="280" cy="24" r="17" stroke-width="1.5"/>
+    <circle cx="280" cy="24" r="12" stroke-width=".8" opacity=".65"/>
+    <!-- rays inside the ring -->
+    <g stroke-width=".9" opacity=".85">
+      <path d="M280 7v5M280 36v5M263 24h5M292 24h5M268 12l3.5 3.5M292 12l-3.5 3.5M268 36l3.5-3.5M292 36l-3.5-3.5"/>
+    </g>
+  </g>
+  <circle cx="280" cy="24" r="4" fill="#c9a961"/>
+</svg>

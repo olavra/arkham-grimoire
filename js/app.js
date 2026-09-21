@@ -19,6 +19,7 @@
   var langNow = document.getElementById('lang-now');
   var langMenu = document.getElementById('lang-menu');
   var sortMenu = document.getElementById('sort-menu');
+  var groupMenu = document.getElementById('group-menu');
   var picker = document.getElementById('pack-picker');
   var pickerQ = document.getElementById('pp-q');
   var pickerList = document.getElementById('pp-list');
@@ -129,6 +130,50 @@
     return null;
   }
 
+  /* Grouping cuts the grid into labelled runs. It is not a second sort key: the
+     chosen sort still orders the cards, and the group only decides which run
+     each one lands in — so Name inside Pack reads A–Z pack by pack. */
+  var GROUPS = [
+    { code: 'none', label: 'None', note: 'ONE GRID' },
+    { code: 'pack', label: 'Pack' },
+    { code: 'encounter', label: 'Encounter set' }
+  ];
+
+  /* '' is a group of its own: player cards belong to no encounter set, and
+     saying so beats filing them under a blank heading. */
+  function groupKey(card) {
+    if (state.group === 'pack') return card.pack_code || '';
+    if (state.group === 'encounter') return card.encounter_code || '';
+    return '';
+  }
+
+  function groupTitle(card) {
+    if (state.group === 'pack') return packLabel(card) || card.pack_code;
+    return card.encounter_name || 'No encounter set';
+  }
+
+  function groupIcon(card) {
+    return state.group === 'pack'
+      ? GameIcons.pack(card.pack_code)
+      : GameIcons.set(card.encounter_code);
+  }
+
+  /* Catalogue order for packs; encounter sets have no order of their own, so
+     they follow their pack and then the order they were printed in — which is
+     the order the API hands them back, hence the position fallback. Cards with
+     no set sort after the ones that have one. */
+  function groupRank(card) {
+    var pack = packIndex[card.pack_code];
+    var p = pack ? (pack.cycle_position * 1000 + pack.position) : 1e6;
+    if (state.group === 'pack') return [p, 0, ''];
+    return [p, card.encounter_code ? 0 : 1, card.encounter_code || ''];
+  }
+
+  function groupCmp(a, b) {
+    var ra = groupRank(a), rb = groupRank(b);
+    return (ra[0] - rb[0]) || (ra[1] - rb[1]) || String(ra[2]).localeCompare(String(rb[2]));
+  }
+
   var state = {
     token: 0,        // invalidates in-flight renders when the route changes
     packs: [],       // selected pack codes; empty means "every pack"
@@ -141,6 +186,7 @@
     /* A view preference, not a filter: it rides along across packs and routes
        rather than being remembered per pack the way the facets are. */
     sort: 'pack',
+    group: 'none',   // a view preference too, and it rides along the same way
     observer: null
   };
   var scrollMemory = Object.create(null);
@@ -418,7 +464,8 @@
           : '') +
         '<div class="pc-body">' +
           '<div class="pc-top">' +
-            '<span class="pc-name">' + esc(p.name) + '</span>' +
+            '<span class="pc-name">' +
+              symbolHtml(GameIcons.pack(p.code), p.name) + esc(p.name) + '</span>' +
             /* FFG's SKU reads better than the ArkhamDB slug; the slug is still
                in the link, and in the tooltip for the packs FFG never boxed. */
             '<span class="pc-code" title="' + esc(p.code) + '">' + esc(ffg || p.code) + '</span>' +
@@ -699,6 +746,75 @@
       '</div>';
   }
 
+  function groupLabel(code) {
+    for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].code === code) return GROUPS[i].label;
+    return code;
+  }
+
+  function groupGroupHtml() {
+    return '' +
+      '<div class="fb-group fb-sort">' +
+        '<span class="fb-label">Group</span>' +
+        '<button type="button" class="facet sort-btn" id="group-btn"' +
+          ' aria-haspopup="listbox" aria-expanded="false" aria-controls="group-menu">' +
+          '<span class="sort-now" id="group-now">' + esc(groupLabel(state.group)) + '</span>' +
+          '<span class="sort-caret" aria-hidden="true">▼</span>' +
+        '</button>' +
+      '</div>';
+  }
+
+  function buildGroupMenu() {
+    if (!groupMenu) return;
+    html(groupMenu, GROUPS.map(function (g) {
+      var on = g.code === state.group;
+      return '<button type="button" class="pop-item' + (on ? ' on' : '') + '"' +
+        ' role="option" aria-selected="' + (on ? 'true' : 'false') + '"' +
+        ' data-group="' + esc(g.code) + '">' +
+        '<span class="pop-tick" aria-hidden="true">✓</span>' +
+        '<span class="pop-name">' + esc(g.label) + '</span>' +
+        (g.note ? '<span class="pop-note">' + esc(g.note) + '</span>' : '') +
+      '</button>';
+    }).join(''));
+  }
+
+  function closeGroup() {
+    if (!groupMenu || groupMenu.hidden) return;
+    groupMenu.hidden = true;
+    var btn = document.getElementById('group-btn');
+    if (btn) {
+      btn.classList.remove('on');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function toggleGroup() {
+    var open = groupMenu.hidden;
+    if (open) { closePicker(); closeSort(); closeLang(); closeNav(); buildGroupMenu(); }
+    groupMenu.hidden = !open;
+    var btn = document.getElementById('group-btn');
+    /* Sort's panel hangs off the right edge of the header; Group sits further
+       left in the bar, so its panel is lined up with the button instead —
+       pulled back in when doing so would push it off the window. */
+    if (open && btn) {
+      var host = groupMenu.offsetParent || document.body;
+      var left = btn.getBoundingClientRect().left - host.getBoundingClientRect().left;
+      groupMenu.style.left = Math.max(12, Math.min(left, host.clientWidth - 222)) + 'px';
+    }
+    if (btn) {
+      btn.classList.toggle('on', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+  }
+
+  function setGroup(code) {
+    closeGroup();
+    if (code === state.group) return;
+    state.group = code;
+    var now = document.getElementById('group-now');
+    if (now) now.textContent = groupLabel(code);
+    applyFilters();
+  }
+
   function buildSortMenu() {
     if (!sortMenu) return;
     html(sortMenu, SORTS.map(function (s) {
@@ -722,7 +838,7 @@
 
   function toggleSort() {
     var open = sortMenu.hidden;
-    if (open) { closePicker(); closeLang(); closeNav(); buildSortMenu(); }
+    if (open) { closePicker(); closeLang(); closeNav(); closeGroup(); buildSortMenu(); }
     sortMenu.hidden = !open;
     var btn = document.getElementById('sort-btn');
     if (btn) {
@@ -734,7 +850,8 @@
   function packGroupHtml() {
     var pills = state.packs.map(function (code) {
       var name = packName(code);
-      return '<span class="pack-pill">' + esc(name) +
+      return '<span class="pack-pill">' +
+        symbolHtml(GameIcons.pack(code), name) + esc(name) +
         '<button type="button" class="pp-x" data-code="' + esc(code) + '"' +
         ' aria-label="Remove ' + esc(name) + '">×</button></span>';
     }).join('');
@@ -782,6 +899,7 @@
         facetGroup('Level', 'level', levelFacets(cards), state.levels, false) +
         '<div class="fb-group fb-tail">' +
           sortGroupHtml() +
+          groupGroupHtml() +
           /* role=status so the count — and the "loading…" that replaces it while
              a pack is fetched — is announced, not just drawn. */
           '<span class="chip" id="count-chip" role="status">' +
@@ -899,6 +1017,7 @@
 
   function openPicker() {
     closeSort();
+    closeGroup();
     closeLang();
     picker.hidden = false;
     var add = document.getElementById('fb-add');
@@ -934,7 +1053,7 @@
     var open = !navLinks.classList.contains('open');
     navLinks.classList.toggle('open', open);
     navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) { closePicker(); closeSort(); closeLang(); }   // one panel at a time
+    if (open) { closePicker(); closeSort(); closeGroup(); closeLang(); }   // one panel at a time
   }
 
   /* ---------- filtering ---------- */
@@ -978,7 +1097,14 @@
     state.filtered = state.cards.filter(passes);
     var cmp = sortCmp(state.sort);
     if (cmp) state.filtered.sort(cmp);   // filter() already made a copy of its own
+    /* Sort first, group second: Array#sort is stable, so gathering the runs
+       afterwards leaves each one in the order the sort just put it in. */
+    if (state.group !== 'none') {
+      state.filtered.sort(groupCmp);
+      countGroups();
+    }
     state.shown = 0;
+    state.openGroup = null;   // the heading the next batch continues under
     grid.innerHTML = '';
 
     var facets = state.types.length + state.factions.length + state.levels.length;
@@ -1007,8 +1133,38 @@
     if (!grid) return;
     var slice = state.filtered.slice(state.shown, state.shown + BATCH);
     if (!slice.length) return;
-    grid.insertAdjacentHTML('beforeend', slice.map(tileHtml).join(''));
+    grid.insertAdjacentHTML('beforeend', slice.map(cellHtml).join(''));
     state.shown += slice.length;
+  }
+
+  /* A tile, preceded by a heading whenever the run changes. The open group is
+     tracked across batches so a set split by the infinite scroll is not
+     announced twice. */
+  function cellHtml(card) {
+    if (state.group === 'none') return tileHtml(card);
+    var key = groupKey(card);
+    if (key === state.openGroup) return tileHtml(card);
+    state.openGroup = key;
+    return groupHeadHtml(card) + tileHtml(card);
+  }
+
+  function countGroups() {
+    state.groupCounts = Object.create(null);
+    state.filtered.forEach(function (c) {
+      var k = groupKey(c);
+      state.groupCounts[k] = (state.groupCounts[k] || 0) + 1;
+    });
+  }
+
+  function groupHeadHtml(card) {
+    var n = (state.groupCounts && state.groupCounts[groupKey(card)]) || 0;
+    var title = groupTitle(card);
+    return '' +
+      '<h2 class="grid-head">' +
+        symbolHtml(groupIcon(card), title) +
+        '<span class="gh-name">' + esc(title) + '</span>' +
+        '<span class="gh-count">' + n + (n === 1 ? ' card' : ' cards') + '</span>' +
+      '</h2>';
   }
 
   function tileHtml(card) {
@@ -1199,6 +1355,15 @@
     if (value == null || value === '') return '';
     return '<div class="cell"><span class="k">' + esc(key) + '</span>' +
       '<span class="v">' + value + '</span></div>';
+  }
+
+  /* The expansion symbols ship as black-on-transparent SVGs, so they are drawn
+     as a mask over the text colour instead of an <img> that would stay black on
+     the dark sheet. */
+  function symbolHtml(url, label) {
+    if (!url) return '';
+    return '<span class="exp-ico" style="--sym:url(&quot;' + esc(url) + '&quot;)" ' +
+      'role="img" aria-label="' + esc(label + ' symbol') + '"></span>';
   }
 
   /* restrictions.investigator is a code -> code map, so the values carry no more
@@ -1405,9 +1570,13 @@
     var backBlock = reverseBlock(card);
 
     var meta = '' +
-      metaCell('Pack', '<a href="#/pack/' + esc(card.pack_code) + '">' + esc(card.pack_name) + '</a>') +
+      metaCell('Pack',
+        symbolHtml(GameIcons.pack(card.pack_code), card.pack_name) +
+        '<a href="#/pack/' + esc(card.pack_code) + '">' + esc(card.pack_name) + '</a>') +
       metaCell('Card number', esc(card.pack_name) + ' #' + esc(String(card.position))) +
-      metaCell('Encounter set', card.encounter_name ? esc(card.encounter_name) : '') +
+      metaCell('Encounter set', card.encounter_name
+        ? symbolHtml(GameIcons.set(card.encounter_code), card.encounter_name) + esc(card.encounter_name)
+        : '') +
       metaCell('Quantity in pack', card.quantity != null ? esc(String(card.quantity)) : '') +
       metaCell('Deck limit', card.deck_limit != null ? esc(String(card.deck_limit)) : '') +
       metaCell('Deck size', card.deck_requirements && card.deck_requirements.size != null
@@ -1583,7 +1752,7 @@
 
   function toggleLang() {
     var open = langMenu.hidden;
-    if (open) { closePicker(); closeSort(); closeNav(); }   // all hang off the header
+    if (open) { closePicker(); closeSort(); closeGroup(); closeNav(); }   // all hang off the header
     langMenu.hidden = !open;
     langBtn.classList.toggle('on', open);
     langBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -1612,6 +1781,7 @@
     Viewer.close();   // a back/forward press while the preview is open should dismiss it
     closePicker();
     closeSort();
+    closeGroup();
     closeLang();
     closeNav();
 
@@ -1714,7 +1884,7 @@
     filtersOpen = !filtersOpen;
     filterbar.hidden = !filtersOpen;
     filtersBtn.setAttribute('aria-expanded', filtersOpen ? 'true' : 'false');
-    if (!filtersOpen) { closePicker(); closeSort(); }   // their triggers just left
+    if (!filtersOpen) { closePicker(); closeSort(); closeGroup(); }   // their triggers just left
     syncHeadHeight();
   });
 
@@ -1732,6 +1902,7 @@
 
     /* Styled as a facet, so it has to be caught before the generic branch. */
     if (e.target.closest('#sort-btn')) { toggleSort(); return; }
+    if (e.target.closest('#group-btn')) { toggleGroup(); return; }
 
     var btn = e.target.closest('.facet');
     if (!btn) return;
@@ -1775,6 +1946,13 @@
     });
   }
 
+  if (groupMenu) {
+    groupMenu.addEventListener('click', function (e) {
+      var item = e.target.closest('.pop-item');
+      if (item) setGroup(item.dataset.group);
+    });
+  }
+
   /* Tapping the section you are already on routes nowhere, so the menu has to
      shut itself rather than wait for a hashchange. */
   navLinks.addEventListener('click', function (e) {
@@ -1785,6 +1963,7 @@
     if (e.key !== 'Escape') return;
     if (!picker.hidden) closePicker();
     closeSort();
+    closeGroup();
     closeLang();
     closeNav();
   });
@@ -1793,6 +1972,7 @@
     if (!picker.hidden &&
         !e.target.closest('#pack-picker') && !e.target.closest('#fb-add')) closePicker();
     if (!e.target.closest('#sort-menu') && !e.target.closest('#sort-btn')) closeSort();
+    if (!e.target.closest('#group-menu') && !e.target.closest('#group-btn')) closeGroup();
     if (!e.target.closest('#lang-wrap')) closeLang();
     if (!e.target.closest('#nav-links') && !e.target.closest('#nav-toggle')) closeNav();
   });

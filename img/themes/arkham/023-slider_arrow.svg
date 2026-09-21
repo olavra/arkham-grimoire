@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 64 64">
+  <filter id="a" width="64" height="64" x="0" y="0" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feColorMatrix in="SourceAlpha" result="hardAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
+    <feOffset/>
+    <feGaussianBlur stdDeviation="4"/>
+    <feComposite in2="hardAlpha" operator="out"/>
+    <feColorMatrix values="0 0 0 0 0.917647 0 0 0 0 0.819608 0 0 0 0 0.52549 0 0 0 0.5 0"/>
+    <feBlend in2="BackgroundImageFix" result="effect1_dropShadow"/>
+    <feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+  </filter>
+  <filter id="b" width="54" height="54" x="5" y="5" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feColorMatrix in="SourceAlpha" result="hardAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
+    <feOffset/>
+    <feGaussianBlur stdDeviation="4"/>
+    <feComposite in2="hardAlpha" operator="out"/>
+    <feColorMatrix values="0 0 0 0 0.917647 0 0 0 0 0.819608 0 0 0 0 0.52549 0 0 0 0.5 0"/>
+    <feBlend in2="BackgroundImageFix" result="effect1_dropShadow"/>
+    <feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+  </filter>
+  <path stroke="#c1b8a3" stroke-linecap="square" stroke-width="1.5" d="m30.3334 27 5 5-5 5"/>
+  <g filter="url(#a)">
+    <path fill="#c1b8a3" fill-rule="evenodd" d="M32 55c12.7025 0 23-10.2975 23-23S44.7025 9 32 9 9 19.2975 9 32s10.2975 23 23 23zm0 1c13.2548 0 24-10.7452 24-24S45.2548 8 32 8 8 18.7452 8 32s10.7452 24 24 24z" clip-rule="evenodd"/>
+  </g>
+  <g filter="url(#b)">
+    <path fill="#c1b8a3" fill-rule="evenodd" d="M32 50.2083c10.0562 0 18.2083-8.1521 18.2083-18.2083S42.0562 13.7917 32 13.7917 13.7917 21.9438 13.7917 32 21.9438 50.2083 32 50.2083zM32 51c10.4934 0 19-8.5066 19-19s-8.5066-19-19-19-19 8.5066-19 19 8.5066 19 19 19z" clip-rule="evenodd"/>
+  </g>
+  <path fill="#c1b8a3" d="M53 32c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2zm-38 0c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2z"/>
+</svg>

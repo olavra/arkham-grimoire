@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Crown for an arched panel: a half sunburst under two concentric arcs. Sits
+     at the top of a panel, centred, and scales with it. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="84" viewBox="0 0 240 84" fill="none">
+  <g stroke="#c9a961">
+    <path d="M14 82a106 106 0 0 1 212 0" stroke-width="1.4"/>
+    <path d="M26 82a94 94 0 0 1 188 0" stroke-width=".7" opacity=".55"/>
+    <!-- fan -->
+    <g stroke-width=".9" opacity=".85">
+      <path d="M120 82V34M120 82l-26-44M120 82l26-44M120 82L78 48M120 82l42-34M120 82L66 62M120 82l54-20"/>
+    </g>
+    <path d="M96 82a24 24 0 0 1 48 0" stroke-width="1.2"/>
+  </g>
+  <circle cx="120" cy="82" r="4" fill="#c9a961"/>
+</svg>

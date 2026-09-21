@@ -4,7 +4,7 @@ A single-page card browser for **Arkham Horror: The Card Game**, built on the pu
 [ArkhamDB API](https://arkhamdb.com/api/). No build step, no dependencies — plain HTML,
 CSS and ES5-compatible JavaScript.
 
-Theme adapted from [templatemo 624 "Lustro Slideshow"](https://templatemo.com/live/templatemo_624_lustro_slideshow).
+Theme modelled on the official [Arkham Horror site](https://www.arkhamhorror.com/): night-blue ground, Didone headlines (Bodoni Moda), Garamond text (EB Garamond), brass ornament and paper cards.
 
 ## Running it
 
@@ -21,7 +21,7 @@ Then visit <http://127.0.0.1:8777/>.
 
 ```
 index.html            app shell — top bar, breadcrumb, view container
-css/style.css         Lustro-derived design system (tokens, glass surfaces, grids)
+css/style.css         design system after arkhamhorror.com (tokens, paper surfaces, ornaments, grids)
 css/arkham-icons.css  @font-face + the .icon-* / .color-* classes
 js/api.js             ArkhamDB client + in-memory cache
 js/markup.js          renders [action]/[willpower]/… tokens and FFG's HTML subset

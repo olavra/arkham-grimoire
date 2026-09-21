@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Chevron band, tiled horizontally: verdigris zigzag under a gold hairline,
+     with a stud at each repeat. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="12" viewBox="0 0 48 12" fill="none">
+  <path d="M0 1.5h48" stroke="#c9a961" stroke-width="1"/>
+  <path d="M0 10L6 5l6 5 6-5 6 5 6-5 6 5 6-5 6 5" stroke="#1f6f66" stroke-width="2"/>
+  <path d="M0 10L6 5l6 5 6-5 6 5 6-5 6 5 6-5 6 5" stroke="#c9a961" stroke-width=".6" opacity=".7"/>
+  <rect x="11" y="1" width="2" height="2" fill="#c9a961"/>
+  <rect x="35" y="1" width="2" height="2" fill="#c9a961"/>
+</svg>

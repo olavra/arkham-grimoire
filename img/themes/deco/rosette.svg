@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sunburst rosette: concentric arcs behind a fan of tapering rays. Used large
+     and faint as a watermark, or small as a section marker. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" fill="none">
+  <g stroke="#c9a961">
+    <circle cx="60" cy="60" r="54" stroke-width="1.4"/>
+    <circle cx="60" cy="60" r="45" stroke-width=".7" opacity=".6"/>
+    <circle cx="60" cy="60" r="20" stroke-width="1.2"/>
+    <!-- rays, every 15 degrees -->
+    <g stroke-width="1.1" opacity=".9">
+      <path d="M60 22V6M60 98v16M22 60H6M98 60h16"/>
+      <path d="M33 33L22 22M87 33l11-11M33 87l-11 11M87 87l11 11"/>
+    </g>
+    <g stroke-width=".7" opacity=".55">
+      <path d="M70 24l5-14M50 24l-5-14M70 96l5 14M50 96l-5 14"/>
+      <path d="M24 50l-14-5M24 70l-14 5M96 50l14-5M96 70l14 5"/>
+    </g>
+    <!-- stepped inner square -->
+    <path d="M60 38l22 22-22 22-22-22z" stroke-width="1"/>
+  </g>
+  <circle cx="60" cy="60" r="5" fill="#c9a961"/>
+</svg>
