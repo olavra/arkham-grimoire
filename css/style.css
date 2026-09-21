@@ -562,16 +562,17 @@ a{color:inherit;text-decoration:none}
 }
 /* The site's product panel: a bordered ground with a star pinned at each
    corner and the box shot standing in the middle. */
+/* A square tile, drawn in three layers so the art can run to the very edge:
+   the tile's own background (the star field, for packs with no art), the art
+   on ::before over the whole tile, and the frame on ::after over both. With
+   the frame on the element itself, the art could only fill the inside of it. */
 .pack-card{
-  width:var(--pack-w);flex:0 0 var(--pack-w);
-  display:flex;flex-direction:column;gap:10px;
+  position:relative;isolation:isolate;
+  width:var(--pack-w);flex:0 0 var(--pack-w);aspect-ratio:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
   padding:0;overflow:visible;
   border:16px solid transparent;
-  border-image:var(--panel-frame) 24 fill stretch;
   border-radius:0;color:var(--ink);text-align:center;
-  /* A field of stars behind the medallion. The art is 945x1500, the tile's own
-     proportion, so it covers without cropping; the frame paints over it. A
-     wash of the ground keeps the symbol and the text on top of it legible. */
   background:
     linear-gradient(180deg,rgba(13,19,23,.25),rgba(13,19,23,.6)),
     var(--stars) center/cover no-repeat;
@@ -579,66 +580,68 @@ a{color:inherit;text-decoration:none}
   transition:transform .45s var(--ee),filter .45s var(--ee);
 }
 .pack-card:hover{transform:translateY(-5px);filter:brightness(1.08)}
-/* Pack art as texture: its own layer inside the frame, so it can be dimmed,
-   greyed a little and softened without touching the medallion or the text on
-   top. Cover-cropped by docs/regen-packart.py to the tile's proportion. On
-   hover it clears and sharpens, and the art shows for what it is. */
-.pack-card{position:relative;isolation:isolate}
-.pack-card.has-art{background:#0f171b}
+.pack-card::after{
+  content:'';position:absolute;inset:-16px;z-index:1;pointer-events:none;
+  border:16px solid transparent;
+  border-image:var(--panel-frame) 24 stretch;
+}
+/* Pack art as texture, edge to edge under the frame: dimmed, greyed a little
+   and softened so the medallion and the text read over it. Cropped square by
+   docs/regen-packart.py. On hover it clears, and the art shows for what it is. */
 .pack-card.has-art::before{
-  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  content:'';position:absolute;inset:-16px;z-index:-1;pointer-events:none;
   background:
-    linear-gradient(180deg,rgba(13,19,23,.2),rgba(13,19,23,.65)),
+    linear-gradient(180deg,rgba(13,19,23,.2),rgba(13,19,23,.7)),
     var(--art) center/cover no-repeat;
   filter:saturate(.7) brightness(.62) blur(1px);
   transition:filter .45s var(--ee);
 }
 .pack-card.has-art:hover::before{filter:saturate(.95) brightness(.85) blur(0)}
 
-/* The pack's expansion symbol fills the square in brass, set on a faint disc
-   like a medallion struck on the panel. A mask, so it takes the colour. */
+/* The pack's expansion symbol in brass, set on a faint disc like a medallion
+   struck on the panel. A mask, so it takes the colour. */
 .pack-card .pc-cover{
-  position:relative;aspect-ratio:1;display:grid;place-items:center;
-  background:radial-gradient(circle,rgba(193,184,163,.09) 0 58%,rgba(193,184,163,.16) 58.5% 59.5%,transparent 60%);
+  position:relative;flex:none;width:60px;aspect-ratio:1;display:grid;place-items:center;
+  background:radial-gradient(circle,rgba(13,19,23,.45) 0 58%,rgba(193,184,163,.3) 58.5% 60%,transparent 61%);
 }
 .pack-card .pc-symbol .exp-ico{
-  width:58%;height:58%;margin:0;vertical-align:0;
-  background:var(--brass);opacity:.92;
-  filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));
+  width:62%;height:62%;margin:0;vertical-align:0;
+  background:var(--brass);opacity:.95;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));
   transition:background .3s,transform .6s var(--ee);
 }
-.pack-card:hover .pc-symbol .exp-ico{background:var(--brass-hi);transform:scale(1.05)}
+.pack-card:hover .pc-symbol .exp-ico{background:var(--brass-hi);transform:scale(1.06)}
 
 .pack-card .pc-body{
-  padding:0 2px 2px;display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;
+  padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;flex:none;width:100%;
 }
 /* Code above name, centred, the way the panel labels its product. */
 .pack-card .pc-top{
-  display:flex;flex-direction:column-reverse;align-items:center;gap:8px;
+  display:flex;flex-direction:column-reverse;align-items:center;gap:5px;
 }
 .pack-card .pc-name{
-  font-family:var(--font-display);font-weight:600;font-size:15.5px;line-height:1.2;
+  font-family:var(--font-display);font-weight:600;font-size:14px;line-height:1.15;
   letter-spacing:.01em;color:var(--ink);
-  /* Two lines, always reserved, so every tile stands the same height; a longer
+  text-shadow:0 1px 6px rgba(0,0,0,.8);
+  /* Two lines, always reserved, so every tile is laid out alike; a longer
      name ends in an ellipsis and reads whole in its tooltip. */
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
-  overflow:hidden;min-height:2.4em;
+  overflow:hidden;min-height:2.3em;
 }
 .pack-card .pc-code{
-  font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
   color:var(--ink-2);flex-shrink:0;
-  padding:3px 12px;border:1px solid var(--line);
-  background:rgba(13,19,23,.5);
+  padding:2px 10px;border:1px solid var(--line);
+  background:rgba(13,19,23,.6);
 }
 .pack-card .pc-foot{
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  margin-top:auto;width:100%;
+  display:flex;flex-direction:column;align-items:center;gap:0;width:100%;
 }
 .pack-card .pc-meta{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 /* No count on the tile: a button's worth of chrome for a figure the pack
    picker already lists beside every pack. */
 .pack-card .pc-count{display:none}
-.pack-card .pc-date{font-family:var(--font-body);font-style:italic;font-size:14px;color:var(--ink-3)}
+.pack-card .pc-date{font-family:var(--font-body);font-style:italic;font-size:12.5px;line-height:1.2;color:var(--ink-3);text-shadow:0 1px 6px rgba(0,0,0,.8)}
 /* The arrow rode along the bottom of the sheet; the button says it now. */
 .pack-card .pc-arr{display:none}
 
@@ -1650,6 +1653,7 @@ body.viewer-open{overflow:hidden}
      half the screen empty: each cycle takes the row and splits it in two. */
   .cycle{flex:1 1 100%}
   .pack-grid{--pack-w:calc(50% - 7px)}
+  .pack-card .pc-cover{width:46px}
   .card-grid{grid-template-columns:1fr}
   .tile-name{font-size:15px}
 }
