@@ -579,6 +579,21 @@ a{color:inherit;text-decoration:none}
   transition:transform .45s var(--ee),filter .45s var(--ee);
 }
 .pack-card:hover{transform:translateY(-5px);filter:brightness(1.08)}
+/* Pack art as texture: its own layer inside the frame, so it can be dimmed,
+   greyed a little and softened without touching the medallion or the text on
+   top. Cover-cropped by docs/regen-packart.py to the tile's proportion. On
+   hover it clears and sharpens, and the art shows for what it is. */
+.pack-card{position:relative;isolation:isolate}
+.pack-card.has-art{background:#0f171b}
+.pack-card.has-art::before{
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(13,19,23,.2),rgba(13,19,23,.65)),
+    var(--art) center/cover no-repeat;
+  filter:saturate(.7) brightness(.62) blur(1px);
+  transition:filter .45s var(--ee);
+}
+.pack-card.has-art:hover::before{filter:saturate(.95) brightness(.85) blur(0)}
 
 /* The pack's expansion symbol fills the square in brass, set on a faint disc
    like a medallion struck on the panel. A mask, so it takes the colour. */

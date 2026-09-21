@@ -445,8 +445,13 @@
     var count = p.known || 0;
     var released = releaseDate(p.available);
     var ffg = PackCovers.ffgCode(p.code);
+    /* Pack art, where there is some, is the texture behind the medallion;
+       the rest keep the star field. See docs/regen-packart.py. */
+    var art = PackArt.url(p.code);
     return '' +
-      '<a class="pack-card glass-card" href="#/pack/' + esc(p.code) + '">' +
+      '<a class="pack-card glass-card' + (art ? ' has-art' : '') + '"' +
+          (art ? ' style="--art:url(&quot;' + esc(art) + '&quot;)"' : '') +
+          ' href="#/pack/' + esc(p.code) + '">' +
         /* The pack's expansion symbol, large, stands where the box art was:
            every pack has one and they all fit the same square, where box shots
            came in every shape, or not at all. It leaves the name line, which
