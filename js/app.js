@@ -444,22 +444,19 @@
   function packCardHtml(p) {
     var count = p.known || 0;
     var released = releaseDate(p.available);
-    /* Covers are keyed by pack code but named after the FFG product where one
-       exists; packs with no art on file simply render without a cover. */
-    var cover = PackCovers.url(p.code);
     var ffg = PackCovers.ffgCode(p.code);
     return '' +
-      '<a class="pack-card glass-card' + (cover ? '' : ' no-cover') +
-          '" href="#/pack/' + esc(p.code) + '">' +
-        (cover
-          ? '<div class="pc-cover">' +
-              '<img src="' + esc(cover) + '" alt="" loading="lazy" decoding="async">' +
-            '</div>'
-          : '') +
+      '<a class="pack-card glass-card" href="#/pack/' + esc(p.code) + '">' +
+        /* The pack's expansion symbol, large, stands where the box art was:
+           every pack has one and they all fit the same square, where box shots
+           came in every shape, or not at all. It leaves the name line, which
+           now carries just the name. */
+        '<div class="pc-cover pc-symbol">' +
+          symbolHtml(GameIcons.pack(p.code), p.name) +
+        '</div>' +
         '<div class="pc-body">' +
           '<div class="pc-top">' +
-            '<span class="pc-name">' +
-              symbolHtml(GameIcons.pack(p.code), p.name) + esc(p.name) + '</span>' +
+            '<span class="pc-name" title="' + esc(p.name) + '">' + esc(p.name) + '</span>' +
             /* FFG's SKU reads better than the ArkhamDB slug; the slug is still
                in the link, and in the tooltip for the packs FFG never boxed. */
             '<span class="pc-code" title="' + esc(p.code) + '">' + esc(ffg || p.code) + '</span>' +
