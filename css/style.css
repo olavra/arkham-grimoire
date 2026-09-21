@@ -1400,7 +1400,7 @@ body.viewer-open{overflow:hidden}
 /* The rule under the header: the line tiles across, the two curled ends sit on
    the corners at their own size. */
 .topbar::after{
-  content:'';position:absolute;left:clamp(26px,5vw,72px);right:clamp(26px,5vw,72px);
+  content:'';position:absolute;left:0;right:0;
   bottom:0;height:5px;pointer-events:none;
   background:var(--deco-line) left center/571px 5px repeat-x;
 }
