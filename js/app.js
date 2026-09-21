@@ -462,9 +462,11 @@
         '<div class="pc-body">' +
           '<div class="pc-top">' +
             '<span class="pc-name" title="' + esc(p.name) + '">' + esc(p.name) + '</span>' +
-            /* FFG's SKU reads better than the ArkhamDB slug; the slug is still
-               in the link, and in the tooltip for the packs FFG never boxed. */
-            '<span class="pc-code" title="' + esc(p.code) + '">' + esc(ffg || p.code) + '</span>' +
+            /* The ArkhamDB code, which every pack has and the app keys on (the
+               route, the pack art); FFG's SKU rides in the tooltip where the
+               pack was boxed under one. */
+            '<span class="pc-code"' + (ffg ? ' title="' + esc(ffg) + '"' : '') + '>' +
+              esc(p.code) + '</span>' +
           '</div>' +
           '<div class="pc-foot">' +
             '<span class="pc-meta">' +
