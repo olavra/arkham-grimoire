@@ -108,12 +108,20 @@
     });
   }
 
+  /* ArkhamDB files a "Books" pack in the Promotional cycle that holds no cards
+     of its own: the novella cards live under each novella's pack. It would be
+     an empty tile in the catalogue and a dead row in the pack picker. It cannot
+     be caught by an empty card count, which the reprint boxes share. */
+  var EMPTY_PACKS = { books: true };
+
   /* Packs, newest cycle last. */
   function getPacks() {
     if (cache.packs) return Promise.resolve(cache.packs);
     var g = gen;
     return getJSON(BASE + '/packs/').then(function (packs) {
-      var sorted = packs.slice().sort(function (a, b) {
+      var sorted = packs.filter(function (p) {
+        return !EMPTY_PACKS[p.code];
+      }).sort(function (a, b) {
         return a.cycle_position - b.cycle_position || a.position - b.position;
       });
       if (fresh(g)) cache.packs = sorted;
