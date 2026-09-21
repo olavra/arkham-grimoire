@@ -27,10 +27,10 @@ SRC = os.path.join(ROOT, 'img', 'packs-art')
 OUT = os.path.join(SRC, 'tiles')
 JS = os.path.join(ROOT, 'js', 'packart.js')
 
-# The pack tile is a 176px square; 1.5x covers a sharp hover on dense screens
+# The pack tile is a 220px square; 1.5x covers a sharp hover on dense screens
 # without paying for a full 2x of an image that is shown darkened. JPEG: the
 # art is painted, it compresses well, and every tool opens it.
-TILE_W, TILE_H = 264, 264
+TILE_W, TILE_H = 330, 330
 QUALITY = 82
 
 NAME = re.compile(r'^(?P<ffg>[a-z0-9]+)-(?P<code>[a-z0-9_]+)$', re.I)
