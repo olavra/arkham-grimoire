@@ -15,14 +15,21 @@
     'eoec': 'tiles/eoec.jpg',
     'eoep': 'tiles/eoep.jpg',
     'fhvc': 'tiles/fhvc.jpg',
+    'fhvp': 'tiles/fhvp.jpg',
     'ptcc': 'tiles/ptcc.jpg',
+    'ptcp': 'tiles/ptcp.jpg',
     'rcore': 'tiles/rcore.jpg',
     'tcuc': 'tiles/tcuc.jpg',
+    'tcup': 'tiles/tcup.jpg',
     'tdcc': 'tiles/tdcc.jpg',
+    'tdcp': 'tiles/tdcp.jpg',
     'tdec': 'tiles/tdec.jpg',
+    'tdep': 'tiles/tdep.jpg',
     'tfac': 'tiles/tfac.jpg',
+    'tfap': 'tiles/tfap.jpg',
     'ticc': 'tiles/ticc.jpg',
     'tskc': 'tiles/tskc.jpg',
+    'tskp': 'tiles/tskp.jpg',
   };
 
   /* Absolute, like GameIcons: the URL travels through a CSS custom
