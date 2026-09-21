@@ -9,13 +9,19 @@
   var DIR = 'img/packs-art/';
 
   var TILES = {
+    'coh': 'tiles/coh.jpg',
+    'core': 'tiles/core.jpg',
     'core_2026': 'tiles/core_2026.jpg',
+    'dre': 'tiles/dre.jpg',
+    'dwl': 'tiles/dwl.jpg',
     'dwlc': 'tiles/dwlc.jpg',
     'dwlp': 'tiles/dwlp.jpg',
+    'enc': 'tiles/enc.jpg',
     'eoec': 'tiles/eoec.jpg',
     'eoep': 'tiles/eoep.jpg',
     'fhvc': 'tiles/fhvc.jpg',
     'fhvp': 'tiles/fhvp.jpg',
+    'hoth': 'tiles/hoth.jpg',
     'ptcc': 'tiles/ptcc.jpg',
     'ptcp': 'tiles/ptcp.jpg',
     'rcore': 'tiles/rcore.jpg',
@@ -25,10 +31,12 @@
     'tdcp': 'tiles/tdcp.jpg',
     'tdec': 'tiles/tdec.jpg',
     'tdep': 'tiles/tdep.jpg',
+    'tece': 'tiles/tece.jpg',
     'tfac': 'tiles/tfac.jpg',
     'tfap': 'tiles/tfap.jpg',
     'ticc': 'tiles/ticc.jpg',
     'ticp': 'tiles/ticp.jpg',
+    'tmm': 'tiles/tmm.jpg',
     'tskc': 'tiles/tskc.jpg',
     'tskp': 'tiles/tskp.jpg',
   };

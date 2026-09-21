@@ -1,7 +1,10 @@
 """Regenerate the pack-tile textures and js/packart.js from img/packs-art/.
 
-Drop the source art in img/packs-art/ named <ffg-id>-<arkhamdb-code>.<ext>,
-e.g. ahc60-rcore.png, then run from the project root:
+Drop the source art in img/packs-art/ named after the pack's ArkhamDB code,
+e.g. hoth.png. A prefix before a dash is ignored, so the FFG SKU can ride
+along where there is one (ahc60-rcore.png): not every pack has a SKU, and
+the ArkhamDB code is what the app keys on. No ArkhamDB code contains a dash,
+so the split is unambiguous. Then run from the project root:
 
     python docs/regen-packart.py
 
@@ -13,12 +16,18 @@ opened. It then rewrites js/packart.js, the code -> tile map app.js reads,
 so a pack only asks for art that exists and the rest keep the star field
 without a 404 each.
 
+Each code is checked against ArkhamDB's pack list; a file whose code is not
+a pack is reported and left out, since no tile would ever ask for it. If the
+list cannot be fetched (offline), every file is taken on trust.
+
 The sources are left untouched; the tiles and the map are generated, so
 edit neither by hand.
 """
+import json
 import os
 import re
 import sys
+import urllib.request
 
 from PIL import Image
 
@@ -33,7 +42,9 @@ JS = os.path.join(ROOT, 'js', 'packart.js')
 TILE_W, TILE_H = 330, 330
 QUALITY = 82
 
-NAME = re.compile(r'^(?P<ffg>[a-z0-9]+)-(?P<code>[a-z0-9_]+)$', re.I)
+# [optional prefix-]code; the code is what ArkhamDB calls the pack.
+NAME = re.compile(r'^(?:[a-z0-9]+-)?(?P<code>[a-z0-9_]+)$', re.I)
+PACKS_URL = 'https://arkhamdb.com/api/public/packs/'
 EXTS = {'.png', '.jpg', '.jpeg', '.webp'}
 
 
@@ -47,9 +58,21 @@ def cover_crop(img):
     return img.crop((left, top, left + TILE_W, top + TILE_H))
 
 
+def arkhamdb_codes():
+    """The set of ArkhamDB pack codes, or None if the list cannot be fetched."""
+    try:
+        with urllib.request.urlopen(PACKS_URL, timeout=15) as res:
+            return {p['code'] for p in json.load(res)}
+    except Exception as err:                      # offline, or the API is down
+        print('  (could not fetch the ArkhamDB pack list: %s; codes not checked)' % err,
+              file=sys.stderr)
+        return None
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    tiles, skipped = {}, []
+    known = arkhamdb_codes()
+    tiles, skipped, unknown = {}, [], []
     for name in sorted(os.listdir(SRC)):
         path = os.path.join(SRC, name)
         base, ext = os.path.splitext(name)
@@ -60,6 +83,13 @@ def main():
             skipped.append(name)
             continue
         code = m.group('code').lower()
+        if known is not None and code not in known:
+            unknown.append((name, code))
+            continue
+        if code in tiles:
+            print('  %s: a second image for %s, which already has one; skipped' % (name, code),
+                  file=sys.stderr)
+            continue
         with Image.open(path) as img:
             cover_crop(img).save(os.path.join(OUT, code + '.jpg'), 'JPEG',
                                  quality=QUALITY, optimize=True, progressive=True)
@@ -96,7 +126,10 @@ def main():
 
     print('%d tile(s) -> img/packs-art/tiles/, js/packart.js rewritten' % len(tiles))
     for name in skipped:
-        print('  skipped %s: expected <ffg-id>-<arkhamdb-code>' % name, file=sys.stderr)
+        print('  skipped %s: expected <arkhamdb-code> or <prefix>-<arkhamdb-code>' % name,
+              file=sys.stderr)
+    for name, code in unknown:
+        print('  skipped %s: "%s" is not an ArkhamDB pack code' % (name, code), file=sys.stderr)
 
 
 if __name__ == '__main__':
