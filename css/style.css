@@ -569,6 +569,13 @@ a{color:inherit;text-decoration:none}
   border:16px solid transparent;
   border-image:var(--panel-frame) 24 fill stretch;
   border-radius:0;color:var(--ink);text-align:center;
+  /* A field of stars behind the medallion. The art is 945x1500, the tile's own
+     proportion, so it covers without cropping; the frame paints over it. A
+     wash of the ground keeps the symbol and the text on top of it legible. */
+  background:
+    linear-gradient(180deg,rgba(13,19,23,.25),rgba(13,19,23,.6)),
+    var(--stars) center/cover no-repeat;
+  background-origin:border-box;
   transition:transform .45s var(--ee),filter .45s var(--ee);
 }
 .pack-card:hover{transform:translateY(-5px);filter:brightness(1.08)}
