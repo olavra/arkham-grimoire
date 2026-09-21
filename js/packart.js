@@ -28,6 +28,7 @@
     'tfac': 'tiles/tfac.jpg',
     'tfap': 'tiles/tfap.jpg',
     'ticc': 'tiles/ticc.jpg',
+    'ticp': 'tiles/ticp.jpg',
     'tskc': 'tiles/tskc.jpg',
     'tskp': 'tiles/tskp.jpg',
   };
