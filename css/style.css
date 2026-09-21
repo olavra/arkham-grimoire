@@ -524,55 +524,49 @@ a{color:inherit;text-decoration:none}
 .chapter[open]>summary .ch-chev{transform:rotate(90deg)}
 .chapter>summary:hover .ch-chev{color:var(--brass-hi)}
 
-/* ---------- cycles (collapsible) ---------- */
-.cycle>summary{list-style:none;cursor:pointer;-webkit-appearance:none}
-.cycle>summary::-webkit-details-marker{display:none}
-.cycle>summary:focus-visible{outline:2px solid var(--accent-soft);outline-offset:4px;border-radius:2px}
+/* ---------- cycles ---------- */
+/* A chapter's cycles flow side by side: each block is as wide as its packs and
+   the next one takes the room left on the row. A cycle too long for the row
+   takes the whole of it and wraps its own packs. */
+.chapter-body{
+  display:flex;flex-wrap:wrap;align-items:flex-start;
+  gap:4px 36px;
+}
+.cycle{flex:0 1 auto;min-width:0;max-width:100%}
 
-/* Hairline pair, as under the header, instead of a single border. */
+/* Green band under the head, as wide as the cycle it names. */
 .section-head{
   display:flex;align-items:baseline;gap:14px;
-  padding:40px 0 16px;margin-bottom:26px;
+  padding:30px 0 12px;margin-bottom:18px;
   border-bottom:0;
   background-image:var(--teal-rule),var(--green-sep);
   background-size:100% 6px,auto 6px;
   background-repeat:no-repeat,repeat-x;
   background-position:left bottom,left bottom;
   background-blend-mode:multiply;
-  flex-wrap:wrap;
 }
 /* Pushed right so the head still reads title-left / count-right. */
-.section-head .mono-tag{margin-left:auto}
-.cycle:not([open]) .section-head{margin-bottom:0}
+.section-head .mono-tag{margin-left:auto;white-space:nowrap}
 .section-head .cy-title{
-  font-family:var(--font-display);font-weight:500;font-size:clamp(21px,2.3vw,30px);
-  letter-spacing:.005em;line-height:1.1;transition:color .25s;
+  font-family:var(--font-display);font-weight:500;font-size:clamp(19px,1.8vw,24px);
+  letter-spacing:.005em;line-height:1.1;
 }
-.cycle>summary:hover .cy-title{color:var(--brass-hi)}
-
-.cy-chev{
-  align-self:center;flex-shrink:0;width:0;height:0;
-  border-left:7px solid currentColor;
-  border-top:5px solid transparent;border-bottom:5px solid transparent;
-  color:var(--brass);transform-origin:30% 50%;
-  transition:transform .3s var(--ee),color .3s;
-}
-.cycle[open]>summary .cy-chev{transform:rotate(90deg)}
-.cycle>summary:hover .cy-chev{color:var(--brass-hi)}
 
 /* ---------- pack grid ---------- */
+/* Fixed-width tiles in a wrapping row: the width is what lets a short cycle be
+   narrow enough to share its row. */
 .pack-grid{
-  display:grid;gap:24px 20px;
-  grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
-  padding:8px 2px;
+  --pack-w:176px;
+  display:flex;flex-wrap:wrap;gap:14px;
+  padding:4px 2px;
 }
 /* The site's product panel: a bordered ground with a star pinned at each
-   corner, the box shot standing in the middle and the call to action cut from
-   the same lined oval as every other button. */
+   corner and the box shot standing in the middle. */
 .pack-card{
-  display:flex;flex-direction:column;gap:14px;
-  padding:4px;overflow:visible;
-  border:24px solid transparent;
+  width:var(--pack-w);flex:0 0 var(--pack-w);
+  display:flex;flex-direction:column;gap:10px;
+  padding:0;overflow:visible;
+  border:16px solid transparent;
   border-image:var(--panel-frame) 24 fill stretch;
   border-radius:0;color:var(--ink);text-align:center;
   transition:transform .45s var(--ee),filter .45s var(--ee);
@@ -587,45 +581,36 @@ a{color:inherit;text-decoration:none}
 }
 .pack-card .pc-cover img{
   width:100%;height:100%;object-fit:contain;display:block;
-  filter:drop-shadow(0 16px 26px rgba(0,0,0,.6));
+  filter:drop-shadow(0 12px 20px rgba(0,0,0,.6));
   transition:transform .6s var(--ee);
 }
 .pack-card:hover .pc-cover img{transform:scale(1.04)}
 
 .pack-card .pc-body{
-  padding:0 6px 6px;display:flex;flex-direction:column;align-items:center;gap:12px;flex:1;
+  padding:0 2px 2px;display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;
 }
 /* Code above name, centred, the way the panel labels its product. */
 .pack-card .pc-top{
-  display:flex;flex-direction:column-reverse;align-items:center;gap:10px;
+  display:flex;flex-direction:column-reverse;align-items:center;gap:8px;
 }
 .pack-card .pc-name{
-  font-family:var(--font-display);font-weight:600;font-size:21px;line-height:1.2;
+  font-family:var(--font-display);font-weight:600;font-size:15.5px;line-height:1.2;
   letter-spacing:.01em;color:var(--ink);
 }
 .pack-card .pc-code{
-  font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
   color:var(--ink-2);flex-shrink:0;
-  padding:4px 14px;border:1px solid var(--line);
+  padding:3px 12px;border:1px solid var(--line);
   background:rgba(13,19,23,.5);
 }
 .pack-card .pc-foot{
-  display:flex;flex-direction:column;align-items:center;gap:8px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
   margin-top:auto;width:100%;
 }
-.pack-card .pc-meta{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;order:2}
-/* The count is the panel's button. */
-.pack-card .pc-count{
-  order:1;
-  display:inline-flex;align-items:center;justify-content:center;
-  min-width:180px;max-width:100%;height:48px;padding:0 14px;
-  border:0 solid transparent;border-width:0 31px;
-  border-image:var(--cta-plate) 0 36 fill stretch;
-  clip-path:var(--btn-clip);
-  box-shadow:inset 0 0 20px 0 rgba(234,209,134,.2);
-  font-family:var(--font-body);font-size:14px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink);text-decoration:none;white-space:nowrap;
-}
+.pack-card .pc-meta{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+/* No count on the tile: a button's worth of chrome for a figure the pack
+   picker already lists beside every pack. */
+.pack-card .pc-count{display:none}
 .pack-card .pc-date{font-family:var(--font-body);font-style:italic;font-size:14px;color:var(--ink-3)}
 /* The arrow rode along the bottom of the sheet; the button says it now. */
 .pack-card .pc-arr{display:none}
@@ -1492,16 +1477,15 @@ body.viewer-open{overflow:hidden}
 }
 
 /* Chapters and cycles open on a plus and close on a minus. */
-.ch-chev,.cy-chev{
+.ch-chev{
   width:16px;height:16px;border:0;align-self:center;
   background:var(--ico-plus) center/contain no-repeat;
   opacity:.85;transform:none;transition:opacity .3s;
 }
-.cy-chev{width:13px;height:13px}
-.chapter[open]>summary .ch-chev,.cycle[open]>summary .cy-chev{
+.chapter[open]>summary .ch-chev{
   background-image:var(--ico-minus);background-size:contain;transform:none;
 }
-.chapter>summary:hover .ch-chev,.cycle>summary:hover .cy-chev{opacity:.7}
+.chapter>summary:hover .ch-chev{opacity:.7}
 
 /* The site's arrow, on the pack card and on the way back. */
 .pack-card .pc-arr{
@@ -1635,6 +1619,10 @@ body.viewer-open{overflow:hidden}
 /* Phone: one card per row. Two columns of ~180px each render the art too small
    to read, and the card face is the point of the grid. */
 @media (max-width:500px){
+  /* Two 176px tiles do not fit a phone's width, which left one tile a row and
+     half the screen empty: each cycle takes the row and splits it in two. */
+  .cycle{flex:1 1 100%}
+  .pack-grid{--pack-w:calc(50% - 7px)}
   .card-grid{grid-template-columns:1fr}
   .tile-name{font-size:15px}
 }

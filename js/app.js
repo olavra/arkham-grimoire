@@ -214,10 +214,9 @@
      collection-shaped catalogue. */
   var showReplaced = true;
   var homeData = null;                      // {packs, cycles}; lets the toggle repaint without refetching
-  /* chapter/cycle -> true. Cycle positions are unique across chapters, so one
-     flat map is enough. Both survive repaints and re-entering the home route. */
+  /* chapter -> true for the chapters folded away. Survives repaints and
+     re-entering the home route. */
   var collapsedChapters = Object.create(null);
-  var collapsedCycles = Object.create(null);
 
   /* ---------- helpers ---------- */
 
@@ -395,19 +394,20 @@
       bucket.order.forEach(function (cyc) {
         var group = bucket.groups[cyc];
         var label = cycleLabel(cyc, group, homeData.cycles);
+        /* A cycle is a fixed block, not a disclosure: most hold two or three
+           packs, and folding each one away cost more scrolling than it saved.
+           Blocks sit side by side while the row has room. */
         body += '' +
-          '<details class="cycle" data-cycle="' + esc(String(cyc)) + '"' +
-              (collapsedCycles[cyc] ? '' : ' open') + '>' +
-            '<summary class="section-head">' +
-              '<span class="cy-chev" aria-hidden="true"></span>' +
+          '<section class="cycle" data-cycle="' + esc(String(cyc)) + '">' +
+            '<header class="section-head">' +
               '<span class="cy-title">' + esc(label) + '</span>' +
               '<span class="mono-tag">Cycle ' + esc(String(cyc)) + ' — ' + group.length +
                 (group.length === 1 ? ' pack' : ' packs') + '</span>' +
-            '</summary>' +
+            '</header>' +
             '<div class="pack-grid">' +
               group.map(packCardHtml).join('') +
             '</div>' +
-          '</details>';
+          '</section>';
       });
 
       /* <details> carries the collapse for free — keyboard, ARIA and find-in-page
@@ -437,12 +437,6 @@
       det.addEventListener('toggle', function () {
         if (det.open) delete collapsedChapters[det.dataset.chapter];
         else collapsedChapters[det.dataset.chapter] = true;
-      });
-    });
-    view.querySelectorAll('.cycle').forEach(function (det) {
-      det.addEventListener('toggle', function () {
-        if (det.open) delete collapsedCycles[det.dataset.cycle];
-        else collapsedCycles[det.dataset.cycle] = true;
       });
     });
   }
