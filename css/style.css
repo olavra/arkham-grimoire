@@ -1669,6 +1669,7 @@ body.viewer-open{overflow:hidden}
     width:var(--rail-w);max-height:none;
     /* Room at the foot for the counts, which stand fixed at the bottom. */
     padding:84px 22px 72px;overflow-y:auto;overscroll-behavior:contain;
+    scrollbar-width:thin;scrollbar-color:var(--line) transparent;
     background:linear-gradient(180deg,rgba(13,19,23,.98),rgba(13,19,23,.95));
     border-right:1px solid var(--line-2);
     box-shadow:14px 0 30px rgba(0,0,0,.35);
@@ -1705,6 +1706,14 @@ body.viewer-open{overflow:hidden}
     background:rgba(13,19,23,.98);
     font-size:12.5px;letter-spacing:.2em;color:var(--ink-3);
   }
+
+  /* Clear filters closes the rail, under the counts in the same strip. It only
+     shows while a filter is set, so the strip grows to hold it only then. */
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) #facet-clear{
+    position:fixed;left:22px;bottom:18px;z-index:4;margin:0;
+  }
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])):has(#facet-clear:not([hidden])) #count-chip{padding-bottom:52px}
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])):has(#facet-clear:not([hidden])) .filterbar{padding-bottom:108px}
 
   /* The page steps right of the rail. */
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .view{padding-left:calc(var(--rail-w) + clamp(18px,3vw,40px));max-width:none}
