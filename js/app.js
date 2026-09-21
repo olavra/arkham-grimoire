@@ -983,6 +983,7 @@
         (p.replaced === true ? ' data-replaced="1"' : '') +
         ' data-name="' + esc(p.name.toLowerCase() + ' ' + p.code) + '">' +
         '<span class="pp-tick" aria-hidden="true">✓</span>' +
+        symbolHtml(GameIcons.pack(p.code), p.name) +
         '<span class="pp-name">' + esc(p.name) + '</span>' +
         '<span class="pp-n">' + (p.known || 0) + '</span>' +
       '</button>';
