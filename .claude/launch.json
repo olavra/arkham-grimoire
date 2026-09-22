@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "arkham-grimoire",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "4173"],
+      "port": 4173
+    },
+    {
+      "name": "arkham-grimoire-dev",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [".claude/dev-server.py"],
+      "port": 4174,
+      "autoPort": true
+    }
+  ]
+}

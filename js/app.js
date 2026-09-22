@@ -444,7 +444,6 @@
   function packCardHtml(p) {
     var count = p.known || 0;
     var released = releaseDate(p.available);
-    var ffg = PackCovers.ffgCode(p.code);
     /* Pack art, where there is some, is the texture behind the medallion;
        the rest keep the star field. See docs/regen-packart.py. */
     var art = PackArt.url(p.code);
@@ -462,11 +461,6 @@
         '<div class="pc-body">' +
           '<div class="pc-top">' +
             '<span class="pc-name" title="' + esc(p.name) + '">' + esc(p.name) + '</span>' +
-            /* The ArkhamDB code, which every pack has and the app keys on (the
-               route, the pack art); FFG's SKU rides in the tooltip where the
-               pack was boxed under one. */
-            '<span class="pc-code"' + (ffg ? ' title="' + esc(ffg) + '"' : '') + '>' +
-              esc(p.code) + '</span>' +
           '</div>' +
           '<div class="pc-foot">' +
             '<span class="pc-meta">' +

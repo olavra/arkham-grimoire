@@ -593,18 +593,19 @@ a{color:inherit;text-decoration:none}
   border:16px solid transparent;
   border-image:var(--panel-frame) 24 stretch;
 }
-/* Pack art as texture, edge to edge under the frame: dimmed, greyed a little
-   and softened so the medallion and the text read over it. Cropped square by
-   docs/regen-packart.py. On hover it clears, and the art shows for what it is. */
+/* Pack art as texture, edge to edge under the frame: dimmed and greyed a
+   little so the medallion and the text read over it, no longer softened —
+   the art stays sharp. Cropped square by docs/regen-packart.py. On hover it
+   clears to full colour, and the art shows for what it is. */
 .pack-card.has-art::before{
   content:'';position:absolute;inset:-16px;z-index:-1;pointer-events:none;
   background:
     linear-gradient(180deg,rgba(13,19,23,.2),rgba(13,19,23,.7)),
     var(--art) center/cover no-repeat;
-  filter:saturate(.7) brightness(.62) blur(1px);
+  filter:saturate(.7) brightness(.62);
   transition:filter .45s var(--ee);
 }
-.pack-card.has-art:hover::before{filter:saturate(.95) brightness(.85) blur(0)}
+.pack-card.has-art:hover::before{filter:saturate(1) brightness(1)}
 
 /* The pack's expansion symbol in brass, set on a faint disc like a medallion
    struck on the panel. A mask, so it takes the colour. */
@@ -616,16 +617,15 @@ a{color:inherit;text-decoration:none}
   width:62%;height:62%;margin:0;vertical-align:0;
   background:var(--brass);opacity:.95;
   filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));
-  transition:background .3s,transform .6s var(--ee);
+  transition:background .3s;
 }
-.pack-card:hover .pc-symbol .exp-ico{background:var(--brass-hi);transform:scale(1.06)}
+.pack-card:hover .pc-symbol .exp-ico{background:var(--brass-hi)}
 
 .pack-card .pc-body{
   padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;flex:none;width:100%;
 }
-/* Code above name, centred, the way the panel labels its product. */
 .pack-card .pc-top{
-  display:flex;flex-direction:column-reverse;align-items:center;gap:5px;
+  display:flex;align-items:center;
 }
 .pack-card .pc-name{
   font-family:var(--font-display);font-weight:600;font-size:15.5px;line-height:1.15;
@@ -635,12 +635,6 @@ a{color:inherit;text-decoration:none}
      name ends in an ellipsis and reads whole in its tooltip. */
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
   overflow:hidden;min-height:2.3em;
-}
-.pack-card .pc-code{
-  font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--ink-2);flex-shrink:0;
-  padding:2px 11px;border:1px solid var(--line);
-  background:rgba(13,19,23,.6);
 }
 .pack-card .pc-foot{
   display:flex;flex-direction:column;align-items:center;gap:0;width:100%;
@@ -1561,17 +1555,26 @@ body.viewer-open{overflow:hidden}
 /* Smoke and a field of stars behind the page, the way the site layers its
    backdrops. */
 .ambient{
+  /* The source art (principal_background.png) is two large star-chart
+     medallions, each carrying its own straight gridlines (a "Vernal Colure"
+     etc.); anchored at the very top the crop sliced flat through one of
+     them, which read as a seam. Centred lower and behind a heavier veil, the
+     lines are still there but no longer look like a stitched-together edge. */
   background:
-    linear-gradient(180deg,rgba(13,19,23,.82) 0%,rgba(13,19,23,.9) 55%,rgba(13,19,23,.97) 100%),
-    var(--bg-main) center top/cover no-repeat fixed,
+    linear-gradient(180deg,rgba(13,19,23,.88) 0%,rgba(13,19,23,.93) 55%,rgba(13,19,23,.97) 100%),
+    var(--bg-main) center 30%/cover no-repeat fixed,
     var(--bg);
   opacity:1;
 }
 .grid-overlay{
+  /* Both smoke layers sit flush against the bottom edge now — fixed there at
+     any viewport size, rather than floating at a fixed pixel offset from the
+     top, which used to land the big one's glow wherever the page happened to
+     be tallest, lighting up whatever of the star-chart backdrop it crossed. */
   background:
-    var(--smoke-c) center top -80px/1400px auto no-repeat,
-    var(--smoke-s) left -90px bottom 12vh/420px auto no-repeat;
-  opacity:.22;mix-blend-mode:screen;
+    var(--smoke-c) center bottom/1400px auto no-repeat,
+    var(--smoke-s) left -90px bottom/420px auto no-repeat;
+  opacity:.1;mix-blend-mode:screen;
 }
 
 /* The lit section link is underlined with the site's own stroke. */
