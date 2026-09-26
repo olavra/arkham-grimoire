@@ -1,0 +1,10 @@
+{
+  "name": "arkham-grimoire",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Card browser for Arkham Horror: The Card Game, built on the ArkhamDB API.",
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "serve": "node scripts/serve.js"
+  }
+}

@@ -105,6 +105,10 @@
   /* opts.back  — render the reverse face too (detail view; the grid never
                   rotates far enough to show it, so it skips the extra image)
      opts.lazy  — defer the face images (grid tiles)
+     opts.upright — keep a portrait frame whatever the card's printed
+                  orientation, and stand a landscape card on its side to fill
+                  it. The grid is a wall of cards: one shape reads as a wall,
+                  a handful of wide tiles reads as gaps in it.
      opts.class — extra classes on the stage element
      opts.id    — id for the stage element */
   function html(card, opts) {
@@ -112,13 +116,17 @@
     var front = Faces.art(card);
     if (!front.src) return null;             // caller falls back to its own placeholder
 
+    var wide = !opts.upright && isLandscape(card);
+
     var out = '' +
       '<div' + (opts.id ? ' id="' + esc(opts.id) + '"' : '') +
-        ' class="c3d-stage' + (isLandscape(card) ? ' landscape' : '') +
+        ' class="c3d-stage' + (wide ? ' landscape' : '') +
+        (opts.upright ? ' upright' : '') +
         (opts['class'] ? ' ' + opts['class'] : '') + '">' +
         '<div class="c3d">' +
           faceHtml('c3d-front', {
-            src: front.src, alt: card.name, orient: 'auto',
+            src: front.src, alt: card.name,
+            orient: opts.upright ? 'upright' : 'auto',
             fallback: front.fallback, blank: card.name, lazy: opts.lazy
           });
 
@@ -163,6 +171,15 @@
     if (!box || !img.naturalWidth || !img.naturalHeight) return;
 
     var wide = img.naturalWidth > img.naturalHeight;
+
+    /* An upright frame never re-frames itself: the portrait box is the point.
+       A wide scan is turned to stand in it, and a card ArkhamDB already stores
+       upright — the parallel investigators — is already standing. */
+    if (img.dataset.orient === 'upright') {
+      if (wide) img.classList.add('sideways', 'wide');
+      return;
+    }
+
     if (wide === box.classList.contains('landscape')) return;   // the guess held
 
     /* A back face never re-frames the card. The two sides of one sheet share a

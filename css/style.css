@@ -309,7 +309,7 @@ a{color:inherit;text-decoration:none}
 .pop-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pop-tick{width:12px;flex-shrink:0;font-size:11px;color:var(--accent-soft);opacity:0}
 .pop-item.on .pop-tick{opacity:1}
-/* The trailing shorthand: a language code, or what a sort actually orders by. */
+/* The trailing shorthand: the language code beside each language's name. */
 .pop-note{
   margin-left:auto;flex-shrink:0;
   font-family:var(--font-mono);font-size:12.5px;letter-spacing:.1em;color:var(--ink-4);
@@ -339,12 +339,12 @@ a{color:inherit;text-decoration:none}
 .sort-btn{gap:8px}
 .sort-btn .sort-now{color:var(--ink);font-weight:500}
 .sort-caret{font-size:8px;color:var(--ink-4);line-height:1}
+/* Both menus are placed from the left in JS, against their own trigger; these
+   are the values they are measured at before that runs. */
 .sort-menu{
   position:absolute;top:100%;right:clamp(18px,4vw,42px);
   min-width:210px;
 }
-/* Positioned from the left in JS, against its own trigger. */
-#group-menu{right:auto}
 
 /* ---------- filter bar ---------- */
 /* Capped rather than free-growing: "All Cards" offers every type, class and
@@ -373,6 +373,34 @@ a{color:inherit;text-decoration:none}
   text-transform:uppercase;color:var(--ink-4);margin-right:2px;
 }
 .filterbar .facet{padding:5px 11px;font-size:12.5px}
+
+/* Tile size — a plain range, dressed as brass rather than the browser's own
+   blue. Both the WebKit and Firefox thumb pseudo-elements are needed, and they
+   cannot share a rule: an unknown selector drops the whole block. */
+.tile-range{
+  -webkit-appearance:none;appearance:none;
+  width:110px;height:18px;background:none;cursor:ew-resize;
+}
+.tile-range::-webkit-slider-runnable-track{
+  height:2px;border-radius:2px;background:var(--line);
+}
+.tile-range::-moz-range-track{
+  height:2px;border-radius:2px;background:var(--line);
+}
+.tile-range::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:13px;height:13px;margin-top:-5.5px;border-radius:50%;
+  background:var(--brass);border:none;
+  transition:background .2s,transform .2s;
+}
+.tile-range::-moz-range-thumb{
+  width:13px;height:13px;border-radius:50%;
+  background:var(--brass);border:none;
+  transition:background .2s,transform .2s;
+}
+.tile-range:hover::-webkit-slider-thumb{background:var(--accent-soft);transform:scale(1.15)}
+.tile-range:hover::-moz-range-thumb{background:var(--accent-soft);transform:scale(1.15)}
+.tile-range:focus-visible{outline:2px solid var(--accent-soft);outline-offset:4px;border-radius:2px}
 .filterbar .facet-clear{align-self:center}
 
 /* pack pills */
@@ -647,6 +675,111 @@ a{color:inherit;text-decoration:none}
 /* The arrow rode along the bottom of the sheet; the button says it now. */
 .pack-card .pc-arr{display:none}
 
+/* ---------- resources: the icon set ---------- */
+/* One page, not a catalogue of tiles: the symbols are the content, so they run
+   in a dense grid under the folder they ship in, and the chapters fold away as
+   they do on the pack page. */
+.res-head{
+  padding:26px 0 6px;
+  display:flex;flex-direction:column;gap:12px;
+  border-bottom:1px solid var(--line-2);
+  margin-bottom:8px;padding-bottom:26px;
+}
+.res-line{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+.res-title{
+  font-family:var(--font-display);font-weight:500;
+  font-size:clamp(32px,4.4vw,58px);letter-spacing:.01em;line-height:1;
+  text-transform:uppercase;color:var(--ink);margin:0;
+  text-shadow:0 2px 24px rgba(0,0,0,.5);
+}
+.res-note{
+  font-family:var(--font-body);font-size:19px;font-style:italic;color:var(--ink-3);
+  max-width:64ch;margin:0;
+}
+.res-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+
+/* The one action on the page, so it is the one filled button on the sheet. */
+.dl-btn{
+  border-color:rgba(36,130,123,.5);
+  background:linear-gradient(180deg,rgba(36,130,123,.24),rgba(36,130,123,.1));
+  color:var(--ink);
+}
+.dl-btn:hover:not(:disabled){
+  border-color:var(--accent-soft);
+  background:linear-gradient(180deg,rgba(36,130,123,.36),rgba(36,130,123,.16));
+}
+.dl-btn:disabled{cursor:progress;opacity:.7}
+/* Running: the same hairline sweep the loading chip uses, along the button. */
+.dl-btn.working{position:relative;overflow:hidden}
+.dl-btn.working::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent-soft),transparent);
+  animation:dl-sweep 1.2s linear infinite;
+}
+@keyframes dl-sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.dl-status{
+  font-family:var(--font-mono);font-size:13px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+
+/* Sets stack, unlike the pack page's cycles: a grid of 60 symbols is never
+   narrow enough to share a row with the next folder.
+
+   `sym-`, not `icon-`: css/arkham-icons.css claims every icon-* class for the
+   glyph font, down to `display:inline-block`. */
+.sym-chapter-body{display:flex;flex-direction:column;gap:2px}
+/* 478 tiles is a lot of painting, and only a set or two is ever on screen, so
+   each set is skipped while it is off it. The reserved height is a guess the
+   browser corrects once a set has been laid out; scrollbar drift while reading
+   is the cost, and it is well under the cost of painting the lot. */
+.sym-set{min-width:0;content-visibility:auto;contain-intrinsic-size:auto 340px}
+
+.sym-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(116px,1fr));
+  gap:12px;padding:4px 2px 12px;
+}
+/* A <button>, so the browser's own defaults have to be turned off before the
+   glass panel shows through. */
+.sym-tile{
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;
+  padding:16px 10px 12px;margin:0;
+  border-radius:var(--r-md);
+  -webkit-appearance:none;appearance:none;
+  font:inherit;color:inherit;text-align:center;cursor:zoom-in;
+  transition:transform .35s var(--ee),border-color .35s,background .35s;
+}
+.sym-tile:focus-visible{outline:2px solid var(--accent-soft);outline-offset:3px}
+.sym-tile:hover{
+  transform:translateY(-3px);
+  border-color:rgba(193,184,163,.5);
+  background:linear-gradient(180deg,rgba(244,243,235,.08),rgba(244,243,235,.03));
+}
+/* The SVGs are black on transparent, so they are drawn as a mask over brass
+   rather than as an <img> that would stay black on the night-blue sheet. */
+/* No drop-shadow here, unlike the pack medallion: a filter on a masked element
+   costs an offscreen pass each, and there are hundreds of these on the page. */
+.sym-art{
+  width:46px;height:46px;flex:none;
+  background:var(--brass);
+  -webkit-mask:var(--sym) no-repeat center/contain;mask:var(--sym) no-repeat center/contain;
+  transition:background .3s;
+}
+.sym-tile:hover .sym-art{background:var(--brass-hi)}
+.sym-name{
+  font-family:var(--font-body);font-size:13.5px;line-height:1.25;
+  color:var(--ink-3);text-align:center;
+  /* Two lines reserved on every tile, so the rows stay square with each
+     other; the file name is on the tile's tooltip in full. */
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;min-height:2.5em;
+}
+
+@media (max-width:640px){
+  .sym-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}
+  .sym-art{width:38px;height:38px}
+}
+
 .chip{
   font-family:var(--font-mono);font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;
   background:rgba(244,243,235,.06);border:1px solid var(--line);
@@ -725,9 +858,14 @@ a{color:inherit;text-decoration:none}
 .facet-clear:hover{color:var(--brass);border-color:var(--brass)}
 
 /* ---------- card grid ---------- */
+/* --tile-w is the tile's minimum width, and the size slider writes it straight
+   onto this element. min(…,100%) keeps a wide setting from overflowing a narrow
+   window: past the container's width the track collapses to a single column
+   instead of spilling sideways. */
 .card-grid{
+  --tile-w:178px;
   display:grid;gap:clamp(12px,1.4vw,20px);
-  grid-template-columns:repeat(auto-fill,minmax(178px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(min(var(--tile-w),100%),1fr));
 }
 /* Group heading — a full-width band across the grid it cuts in two. It sticks
    under the header while its own run scrolls past, so a card in the middle of
@@ -771,15 +909,26 @@ a{color:inherit;text-decoration:none}
 .card-tile:hover{
   transform:translateY(-5px);
   background:linear-gradient(180deg,rgba(193,184,163,.07),transparent);
-  border-color:var(--line-2);
 }
+/* The plain rounded-rect outline never matched the rest of the theme; the
+   same ornate frame the pack tiles wear now fades in around the card on
+   hover instead. Sits outside the tile's own box (negative inset) and only
+   fades in, so it costs no layout — nothing shifts when it appears. */
+.card-tile::after{
+  content:'';position:absolute;inset:-14px;z-index:2;pointer-events:none;
+  border:14px solid transparent;
+  border-image:var(--panel-frame) 24 stretch;
+  opacity:0;transition:opacity .3s var(--ee);
+}
+.card-tile:hover::after{opacity:1}
 .card-tile:focus-visible{outline:2px solid var(--accent-soft);outline-offset:3px}
 
+/* Every grid tile is portrait — a landscape card stands on its side to fill
+   the frame (Card3D's `upright`), so the wall of cards keeps one shape. */
 .tile-img{
   position:relative;width:100%;aspect-ratio:5/7;
   display:grid;place-items:center;
 }
-.tile-img.landscape{aspect-ratio:7/5}
 /* only the flat placeholder tile is a surface of its own — a 3D tile hands the
    border, the fill and the clipping to its faces, and must not clip the tilt */
 .tile-img:not(.c3d-stage){
@@ -791,7 +940,6 @@ a{color:inherit;text-decoration:none}
    landscape 7:5. Same ratio the 3D viewer derives from --w. */
 .tile-img,
 .detail-art .frame{border-radius:4.4% / 3.14%}
-.tile-img.landscape,
 .detail-art .frame.landscape{border-radius:4.4% / 6.16%}
 .tile-img .noimg{
   font-family:var(--font-mono);font-size:12.5px;letter-spacing:.2em;
@@ -891,6 +1039,11 @@ a{color:inherit;text-decoration:none}
 .c3d-face img.sideways.wide,
 .detail-art .frame img.sideways.wide,
 .v-face img.sideways.wide{width:calc(100% * 7 / 5);aspect-ratio:7 / 5}
+/* An upright frame turns its card anticlockwise: the card's top edge lands on
+   the left, which is the way the eye already tilts to read a card standing on
+   its side. */
+.c3d-stage.upright{--spin:-90deg}
+
 /* A back face is mirrored, which reverses the sense of any turn inside it: the
    same quarter turn that rights the front lands the back upside down. The
    direction rides on an inherited custom property rather than a second
@@ -1292,6 +1445,27 @@ body.viewer-open{overflow:hidden}
   padding:2px 6px;font-family:var(--font-mono);font-size:12px;color:var(--ink-2);margin-left:3px;
 }
 
+
+/* ---------- resources: one symbol, full screen ---------- */
+/* The card viewer's shell with the 3D removed — see js/symviewer.js. Only the
+   stage and the mark are its own; the backdrop, bar and close button are the
+   .viewer chrome, so both previews read as the same thing. */
+.symview-stage{
+  flex:1;min-width:0;min-height:0;display:grid;place-items:center;
+  overflow:hidden;cursor:zoom-out;
+  animation:viewerPop .5s var(--ee) both;
+}
+/* Square, and bounded on both axes: the mark keeps its own proportions inside
+   that box because the mask is sized `contain`. */
+.symview-mark{
+  display:block;
+  width:min(62vh,var(--v-max-w),620px);aspect-ratio:1;
+  background:var(--brass-hi);
+  -webkit-mask:var(--sym) no-repeat center/contain;mask:var(--sym) no-repeat center/contain;
+  filter:drop-shadow(0 24px 50px rgba(0,0,0,.65));
+  pointer-events:none;                 /* clicks belong to the stage, which closes */
+}
+
 /* the detail-view art becomes the trigger */
 .detail-art .frame{cursor:zoom-in}
 .detail-art .frame:focus-visible{outline:2px solid var(--accent-soft);outline-offset:3px}
@@ -1641,7 +1815,7 @@ body.viewer-open{overflow:hidden}
 }
 
 @media (max-width:640px){
-  .card-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
+  .card-grid{--tile-w:132px}
   /* The rows stop being boxes so every group becomes a direct flex item of the
      bar: one group per line, and the count/Clear tail can then be ordered last
      instead of being stuck mid-bar under Level, which is where it lands the
@@ -1665,7 +1839,7 @@ body.viewer-open{overflow:hidden}
   .cycle{flex:1 1 100%}
   .pack-grid{--pack-w:calc(50% - 7px)}
   .pack-card .pc-cover{width:46px}
-  .card-grid{grid-template-columns:1fr}
+  .card-grid{--tile-w:100%}
   .tile-name{font-size:15px}
 }
 
@@ -1723,7 +1897,9 @@ body.viewer-open{overflow:hidden}
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .fb-row{flex-direction:column;align-items:stretch;gap:24px}
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .fb-group{flex-wrap:wrap;gap:8px}
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .fb-label{flex-basis:100%;margin:0 0 2px}
-  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .fb-tail{margin-left:0;flex-wrap:wrap;gap:12px}
+  /* Sort and Group are how the grid is read, not what it holds: they head the
+     rail directly under the search, above the filters proper. */
+  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .fb-tail{order:-1;margin-left:0;flex-wrap:wrap;gap:12px}
 
   /* The counts are the rail's foot: a strip pinned to its bottom edge, under
      every filter however long the list runs. */
@@ -1749,16 +1925,6 @@ body.viewer-open{overflow:hidden}
   /* The page steps right of the rail. */
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .view{padding-left:calc(var(--rail-w) + clamp(18px,3vw,40px));max-width:none}
   body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .footline{padding-left:calc(var(--rail-w) + clamp(18px,4vw,42px))}
-
-  /* Panels the rail opens fly out beside it rather than under the bar. The
-     group menu's left is written inline by JS against its trigger, hence the
-     !important. */
-  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .pack-picker,
-  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) .sort-menu,
-  body:has(#filters-toggle:not([hidden])):has(#filterbar:not([hidden])) #group-menu{
-    position:fixed;top:calc(var(--topbar-h) + 14px);right:auto;
-    left:calc(var(--rail-w) + 10px)!important;
-  }
 
   /* Filters only folds the rail now, so it is drawn as a tab on the rail's
      edge, halfway down; folded, the tab waits at the window's edge. Its funnel,
@@ -1788,3 +1954,7 @@ body.viewer-open{overflow:hidden}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
+
+/* Pack catalogue with Group: None — one grid, spaced off the header the way
+   a cycle's head would be. */
+.pack-flat{padding-top:30px}

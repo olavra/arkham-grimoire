@@ -13,6 +13,7 @@
   var filtersN = document.getElementById('filters-n');
   var cardsBtn = document.getElementById('cards-btn');
   var packsBtn = document.getElementById('packs-btn');
+  var resourcesBtn = document.getElementById('resources-btn');
   var navToggle = document.getElementById('nav-toggle');
   var navLinks = document.getElementById('nav-links');
   var langBtn = document.getElementById('lang-btn');
@@ -94,16 +95,14 @@
      stable, so equal cards keep the pack order they arrived in. That makes Pack
      the second key of every other sort for free. */
   var SORTS = [
-    /* `note` is the shorthand on the right of each row — only where it says
-       something the label doesn't. */
-    { code: 'pack', label: 'Pack', note: 'SET #', cmp: null },   // the order they arrive in
-    { code: 'name', label: 'Name', note: 'A–Z', cmp: function (a, b) {
+    { code: 'pack', label: 'Pack', cmp: null },   // the order they arrive in
+    { code: 'name', label: 'Name', cmp: function (a, b) {
       return String(a.name || '').localeCompare(String(b.name || ''));
     } },
-    { code: 'level', label: 'Level', note: '0–5', cmp: function (a, b) {
+    { code: 'level', label: 'Level', cmp: function (a, b) {
       return num(a.xp) - num(b.xp);
     } },
-    { code: 'cost', label: 'Cost', note: '0–9', cmp: function (a, b) {
+    { code: 'cost', label: 'Cost', cmp: function (a, b) {
       return num(a.cost) - num(b.cost);
     } },
     { code: 'faction', label: 'Class', cmp: function (a, b) {
@@ -112,7 +111,7 @@
     { code: 'type', label: 'Type', cmp: function (a, b) {
       return rank(TYPE_ORDER, a.type_code) - rank(TYPE_ORDER, b.type_code);
     } },
-    { code: 'quantity', label: 'Copies', note: '×4–×1', cmp: function (a, b) {
+    { code: 'quantity', label: 'Copies', cmp: function (a, b) {
       return num(b.quantity) - num(a.quantity);   // most copies first: 4s before 1s
     } }
   ];
@@ -134,25 +133,31 @@
      chosen sort still orders the cards, and the group only decides which run
      each one lands in — so Name inside Pack reads A–Z pack by pack. */
   var GROUPS = [
-    { code: 'none', label: 'None', note: 'ONE GRID' },
+    { code: 'none', label: 'None' },
     { code: 'pack', label: 'Pack' },
-    { code: 'encounter', label: 'Encounter set' }
+    { code: 'encounter', label: 'Encounter set' },
+    { code: 'type', label: 'Type' }
   ];
 
   /* '' is a group of its own: player cards belong to no encounter set, and
      saying so beats filing them under a blank heading. */
   function groupKey(card) {
     if (state.group === 'pack') return card.pack_code || '';
+    if (state.group === 'type') return card.type_code || '';
     if (state.group === 'encounter') return card.encounter_code || '';
     return '';
   }
 
   function groupTitle(card) {
     if (state.group === 'pack') return packLabel(card) || card.pack_code;
+    if (state.group === 'type') return card.type_name || card.type_code || 'No type';
     return card.encounter_name || 'No encounter set';
   }
 
+  /* No symbol for a type: FFG prints none, and the icon set here is the packs'
+     and the encounter sets'. The heading carries its name and count alone. */
   function groupIcon(card) {
+    if (state.group === 'type') return null;
     return state.group === 'pack'
       ? GameIcons.pack(card.pack_code)
       : GameIcons.set(card.encounter_code);
@@ -161,8 +166,15 @@
   /* Catalogue order for packs; encounter sets have no order of their own, so
      they follow their pack and then the order they were printed in — which is
      the order the API hands them back, hence the position fallback. Cards with
-     no set sort after the ones that have one. */
+     no set sort after the ones that have one. Types run in the same order the
+     Type facet lists them: the order a card is read in, not A–Z. */
   function groupRank(card) {
+    /* Every type TYPE_ORDER doesn't list shares one rank, so the code itself
+       breaks the tie — two unlisted types would otherwise interleave and print
+       their heading once per run. */
+    if (state.group === 'type') {
+      return [rank(TYPE_ORDER, card.type_code), 0, card.type_code || ''];
+    }
     var pack = packIndex[card.pack_code];
     var p = pack ? (pack.cycle_position * 1000 + pack.position) : 1e6;
     if (state.group === 'pack') return [p, 0, ''];
@@ -173,6 +185,19 @@
     var ra = groupRank(a), rb = groupRank(b);
     return (ra[0] - rb[0]) || (ra[1] - rb[1]) || String(ra[2]).localeCompare(String(rb[2]));
   }
+
+  /* The pack catalogue has sort and group menus of its own: the card orders
+     above mean nothing for packs. Oldest First is the catalogue as ArkhamDB
+     ships it. */
+  var HOME_SORTS = [
+    { code: 'newest', label: 'Newest First' },
+    { code: 'oldest', label: 'Oldest First' }
+  ];
+  var HOME_GROUPS = [
+    { code: 'chapter', label: 'Chapter / Cycle' },
+    { code: 'none', label: 'None' }
+  ];
+  var homeView = { sort: 'oldest', group: 'chapter' };
 
   var state = {
     token: 0,        // invalidates in-flight renders when the route changes
@@ -191,6 +216,27 @@
   };
   var scrollMemory = Object.create(null);
   var filterMemory = Object.create(null);   // pack key -> {types, factions, levels}
+
+  /* Tile size — the minimum column width the card grid is laid out on, in
+     pixels. A view preference like sort and group: one setting for every pack
+     and route, and unlike those it outlives the tab, since it is really a
+     statement about the screen it is being read on. */
+  var TILE_KEY = 'ag:tile';
+  var TILE_MIN = 110;
+  var TILE_MAX = 340;
+  var TILE_DEFAULT = 178;
+  var tileSize = storedTile();
+
+  /* null, not the default: an untouched slider leaves --tile-w alone so the
+     stylesheet's own per-width defaults (132px under 640, one column under 500)
+     keep applying. */
+  function storedTile() {
+    var raw;
+    try { raw = localStorage.getItem(TILE_KEY); } catch (e) { return null; }
+    var n = parseInt(raw, 10);
+    if (!n || n < TILE_MIN || n > TILE_MAX) return null;
+    return n;
+  }
 
   var packIndex = Object.create(null);      // pack code -> pack
   var packList = [];                        // packs in catalogue order
@@ -230,6 +276,7 @@
     return (location.hash || '#/').replace(/^#\/?/, '').split('/').filter(Boolean);
   }
   function isHome() { return routeParts()[0] === 'packs'; }
+  function isResources() { return routeParts()[0] === 'resources'; }
   function isSearch() { return routeParts()[0] === 'search'; }
   function searchHash(q) { return '#/search/' + encodeURIComponent(q); }
 
@@ -252,13 +299,16 @@
     if (show) backBtn.setAttribute('href', href || PACKS_HASH);
   }
 
-  /* Cards and Packs are the two top-level sections. Everything that browses
-     cards — the index, a pack's grid, a card page, a search — lights Cards;
-     only the catalogue itself lights Packs. */
+  /* Cards, Packs and Resources are the three top-level sections. Everything
+     that browses cards — the index, a pack's grid, a card page, a search —
+     lights Cards; the catalogue lights Packs and the icon set lights
+     Resources. */
   function syncNav() {
     var packs = isHome();
-    cardsBtn.classList.toggle('on', !packs);
+    var res = isResources();
+    cardsBtn.classList.toggle('on', !packs && !res);
     packsBtn.classList.toggle('on', packs);
+    resourcesBtn.classList.toggle('on', res);
   }
 
   /* The header is fixed, so the view has to reserve its height — and that
@@ -361,6 +411,15 @@
   function paintHome() {
     var all = homeData.packs;
     var packs = showReplaced ? all : all.filter(function (p) { return p.replaced !== true; });
+    var newest = homeView.sort === 'newest';
+
+    if (homeView.group === 'none') {
+      paintHomeFlat(packs, all.length, newest);
+      return;
+    }
+    /* Grouped, Newest First is the catalogue run backwards: chapters, cycles
+       and the packs inside each all flip. */
+    if (newest) packs = packs.slice().reverse();
 
     /* chapter -> cycle_position -> packs. Packs arrive sorted by cycle_position
        then position, so insertion order is already display order. */
@@ -379,7 +438,7 @@
       }
       bucket.groups[p.cycle_position].push(p);
     });
-    chapters.sort(function (a, b) { return a - b; });
+    chapters.sort(function (a, b) { return newest ? b - a : a - b; });
 
     /* No "All Cards" entry here — the whole pool is the index, reachable from
        the Cards section in the topbar. */
@@ -441,6 +500,23 @@
     });
   }
 
+  /* Ungrouped, the packs run by release date alone, so the Return To boxes and
+     Side Stories land among the cycles they came out beside. Packs with no date
+     go last either way; ties keep catalogue order. */
+  function paintHomeFlat(packs, total, newest) {
+    var at = Object.create(null);
+    homeData.packs.forEach(function (p, i) { at[p.code] = i; });
+    var sorted = packs.slice().sort(function (a, b) {
+      var da = a.available || '', db = b.available || '';
+      if (!da !== !db) return da ? -1 : 1;
+      if (da !== db) return (da < db ? -1 : 1) * (newest ? -1 : 1);
+      return (at[a.code] - at[b.code]) * (newest ? -1 : 1);
+    });
+    html(view, '<div class="pack-grid pack-flat">' + sorted.map(packCardHtml).join('') + '</div>');
+    renderHomeFilterbar(packs.length, total);
+    showFilters(true);
+  }
+
   function packCardHtml(p) {
     var count = p.known || 0;
     var released = releaseDate(p.available);
@@ -471,6 +547,242 @@
           '</div>' +
         '</div>' +
       '</a>';
+  }
+
+  /* ---------- resources: the icon set ---------- */
+
+  /* The expansion symbols we vendor, browsable and downloadable as one archive.
+     The tree ships as js/iconindex.js — a static host has no directory listing
+     — and the zip is built in the page from the same list, so the grid and the
+     download can never disagree about what the set contains. */
+
+  var RESOURCES_HASH = '#/resources';
+
+  /* Built once and kept: the archive is a few megabytes of fetching and
+     deflating, and pressing the button again should not pay for it twice. */
+  var iconZip = null;
+
+  /* Absolute, like GameIcons': the tile puts this in a CSS custom property, and
+     a relative url() in one resolves against the stylesheet, not the page. */
+  function iconUrl(groupPath, file) {
+    var rel = IconIndex.dir + (groupPath + '/' + file).split('/').map(encodeURIComponent).join('/');
+    return new URL(rel, document.baseURI).href;
+  }
+
+  /* "NOTZ-Agents-of-Hastur.svg" -> "Agents of Hastur". The leading initialism is
+     the pack the folder already names, so it is dropped; names with no such
+     prefix ("Class-Guardian", "Seal-A") keep every word, since the test is for
+     a run of capitals, which those are not. */
+  function iconLabel(file) {
+    return file.replace(/\.svg$/i, '').replace(/^[A-Z0-9]{2,8}-/, '').replace(/-/g, ' ');
+  }
+
+  /* "00 - Core" -> "Core"; "Scenarios/01 - Curse of the Rougarou" -> the
+     scenario. The numbers are there to order the folders, not to be read. */
+  function iconGroupLabel(group) {
+    var last = group.label.split('/').pop();
+    return last.replace(/^\d+[a-z]?\s*-\s*/i, '') || last;
+  }
+
+  /* A button, not a figure: the tile opens the symbol full screen, and a button
+     brings the keyboard and the focus ring with it. Its accessible name is the
+     caption below the mark, so the mark itself is hidden from the tree and the
+     file name stays a tooltip. The preview reads what it needs off the dataset
+     rather than being handed a closure per tile — there are 478 of them. */
+  function iconTileHtml(group, file) {
+    var label = iconLabel(file);
+    var url = iconUrl(group.path, file);
+    return '' +
+      '<button type="button" class="sym-tile glass-card" title="' + esc(file) + '"' +
+          ' data-sym="' + esc(url) + '"' +
+          ' data-name="' + esc(label) + '"' +
+          ' data-set="' + esc(iconGroupLabel(group)) + '">' +
+        '<span class="sym-art" style="--sym:url(&quot;' + esc(url) + '&quot;)" ' +
+          'aria-hidden="true"></span>' +
+        '<span class="sym-name">' + esc(label) + '</span>' +
+      '</button>';
+  }
+
+  function renderResources() {
+    ++state.token;
+    showBack(false);
+    showFilters(false);
+
+    /* chapter -> its folders, both already in the order the generator walked. */
+    var chapters = [];
+    var byChapter = Object.create(null);
+    IconIndex.groups.forEach(function (g) {
+      var n = parseInt(g.chapter.replace(/\D+/g, ''), 10) || 1;
+      if (!byChapter[n]) { byChapter[n] = []; chapters.push(n); }
+      byChapter[n].push(g);
+    });
+
+    var out = '' +
+      '<section class="res-head">' +
+        '<div class="res-line">' +
+          '<h1 class="res-title">Resources</h1>' +
+          '<span class="mono-tag">' + IconIndex.count + ' icons</span>' +
+        '</div>' +
+        '<p class="res-note">Every expansion symbol in the collection, drawn from the ' +
+          'printed boxes and encounter sets. Black SVGs on transparent ground — the page ' +
+          'recolours them as it draws them.</p>' +
+        '<div class="res-actions">' +
+          '<button type="button" class="btn-ghost dl-btn" id="dl-icons">' +
+            'Download all as .zip</button>' +
+          '<span class="dl-status" id="dl-status" role="status" aria-live="polite"></span>' +
+        '</div>' +
+      '</section>';
+
+    chapters.forEach(function (ch) {
+      var groups = byChapter[ch];
+      var meta = CHAPTERS[ch] || { label: 'Chapter ' + ch, note: '' };
+      var n = groups.reduce(function (sum, g) { return sum + g.files.length; }, 0);
+
+      var body = groups.map(function (g) {
+        return '' +
+          '<section class="sym-set">' +
+            '<header class="section-head">' +
+              '<span class="cy-title" title="' + esc(iconGroupLabel(g)) + '">' +
+                esc(iconGroupLabel(g)) + '</span>' +
+              '<span class="mono-tag">' + g.files.length +
+                (g.files.length === 1 ? ' icon' : ' icons') + '</span>' +
+            '</header>' +
+            '<div class="sym-grid">' +
+              g.files.map(function (f) { return iconTileHtml(g, f); }).join('') +
+            '</div>' +
+          '</section>';
+      }).join('');
+
+      /* Same disclosure as the pack catalogue, and it shares its collapse
+         memory: the two pages are the same two chapters. */
+      out += '' +
+        '<details class="chapter" data-chapter="' + esc(String(ch)) + '"' +
+            (collapsedChapters[ch] ? '' : ' open') + '>' +
+          '<summary class="chapter-head">' +
+            '<div class="ch-line">' +
+              '<span class="ch-chev" aria-hidden="true"></span>' +
+              '<span class="ch-title">' + esc(meta.label) + '</span>' +
+              '<span class="mono-tag">' + n + (n === 1 ? ' icon' : ' icons') + '</span>' +
+            '</div>' +
+            (meta.note ? '<span class="ch-note">' + esc(meta.note) + '</span>' : '') +
+          '</summary>' +
+          '<div class="sym-chapter-body">' + body + '</div>' +
+        '</details>';
+    });
+
+    html(view, out);
+
+    view.querySelectorAll('.chapter').forEach(function (det) {
+      det.addEventListener('toggle', function () {
+        if (det.open) delete collapsedChapters[det.dataset.chapter];
+        else collapsedChapters[det.dataset.chapter] = true;
+      });
+    });
+
+    wireIconDownload();
+    restoreScroll(RESOURCES_HASH);
+  }
+
+  /* ---------- resources: the archive ---------- */
+
+  /* Eight at a time: enough to keep the connection busy over 478 small files,
+     few enough that the browser is not queueing hundreds of requests it will
+     serve one connection at a time anyway. */
+  var FETCH_AT_ONCE = 8;
+
+  function fetchIcons(onProgress) {
+    var jobs = [];
+    IconIndex.groups.forEach(function (g) {
+      g.files.forEach(function (f) {
+        jobs.push({ name: g.path + '/' + f, url: iconUrl(g.path, f) });
+      });
+    });
+
+    var out = new Array(jobs.length);
+    var next = 0, done = 0;
+
+    function pump() {
+      if (next >= jobs.length) return Promise.resolve();
+      var i = next++;
+      var job = jobs[i];
+      return fetch(job.url).then(function (r) {
+        if (!r.ok) throw new Error(job.name + ' — ' + r.status);
+        return r.arrayBuffer();
+      }).then(function (buf) {
+        out[i] = { name: job.name, bytes: new Uint8Array(buf) };
+        if (onProgress) onProgress(++done, jobs.length);
+        return pump();
+      });
+    }
+
+    var lanes = [];
+    for (var k = 0; k < Math.min(FETCH_AT_ONCE, jobs.length); k++) lanes.push(pump());
+    return Promise.all(lanes).then(function () { return out; });
+  }
+
+  function saveBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    /* Revoking straight away can cancel the download in some browsers. */
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  }
+
+  function wireIconDownload() {
+    var btn = document.getElementById('dl-icons');
+    var status = document.getElementById('dl-status');
+    if (!btn) return;
+
+    function say(msg) {
+      /* The page is rebuilt on every route change, so the element this closure
+         holds may no longer be on it — the build carries on either way. */
+      if (status && status.isConnected) status.textContent = msg || '';
+    }
+    function busy(on) {
+      if (btn.isConnected) {
+        btn.disabled = on;
+        btn.classList.toggle('working', on);
+      }
+    }
+
+    btn.addEventListener('click', function () {
+      if (btn.disabled) return;
+
+      if (iconZip) {
+        saveBlob(iconZip, 'arkham-grimoire-icons.zip');
+        say('Saved.');
+        return;
+      }
+
+      busy(true);
+      say('Gathering 0 / ' + IconIndex.count);
+
+      fetchIcons(function (n, total) {
+        say('Gathering ' + n + ' / ' + total);
+      }).then(function (files) {
+        return Zip.create(files, function (n, total) {
+          say((Zip.deflates ? 'Compressing ' : 'Packing ') + n + ' / ' + total);
+        });
+      }).then(function (blob) {
+        iconZip = blob;
+        saveBlob(blob, 'arkham-grimoire-icons.zip');
+        busy(false);
+        say(IconIndex.count + ' icons — ' + fileSize(blob.size));
+      }).catch(function (err) {
+        busy(false);
+        say('Failed: ' + (err && err.message ? err.message : String(err)));
+      });
+    });
+  }
+
+  function fileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
   /* ---------- pack: card grid ---------- */
@@ -564,6 +876,7 @@
       renderFilterbar();
       showFilters(true);
       Card3D.bind(document.getElementById('card-grid'));   // delegated: covers later batches
+      applyTileSize();
 
       lastGrid = location.hash;
       applyFilters();
@@ -718,10 +1031,18 @@
       '</div>';
   }
 
-  function sortLabel(code) {
-    for (var i = 0; i < SORTS.length; i++) if (SORTS[i].code === code) return SORTS[i].label;
+  /* The sort and group menus serve both the card browser and the pack
+     catalogue; the route decides which options and which setting they show. */
+  function sortOptions() { return isHome() ? HOME_SORTS : SORTS; }
+  function groupOptions() { return isHome() ? HOME_GROUPS : GROUPS; }
+  function currentSort() { return isHome() ? homeView.sort : state.sort; }
+  function currentGroup() { return isHome() ? homeView.group : state.group; }
+
+  function optionLabel(list, code) {
+    for (var i = 0; i < list.length; i++) if (list[i].code === code) return list[i].label;
     return code;
   }
+  function sortLabel(code) { return optionLabel(sortOptions(), code); }
 
   /* Seven orders is past what a chip row can carry without taking a line of the
      header to say something the user sets once — so it collapses to the same
@@ -732,16 +1053,13 @@
         '<span class="fb-label">Sort</span>' +
         '<button type="button" class="facet sort-btn" id="sort-btn"' +
           ' aria-haspopup="listbox" aria-expanded="false" aria-controls="sort-menu">' +
-          '<span class="sort-now" id="sort-now">' + esc(sortLabel(state.sort)) + '</span>' +
+          '<span class="sort-now" id="sort-now">' + esc(sortLabel(currentSort())) + '</span>' +
           '<span class="sort-caret" aria-hidden="true">▼</span>' +
         '</button>' +
       '</div>';
   }
 
-  function groupLabel(code) {
-    for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].code === code) return GROUPS[i].label;
-    return code;
-  }
+  function groupLabel(code) { return optionLabel(groupOptions(), code); }
 
   function groupGroupHtml() {
     return '' +
@@ -749,22 +1067,82 @@
         '<span class="fb-label">Group</span>' +
         '<button type="button" class="facet sort-btn" id="group-btn"' +
           ' aria-haspopup="listbox" aria-expanded="false" aria-controls="group-menu">' +
-          '<span class="sort-now" id="group-now">' + esc(groupLabel(state.group)) + '</span>' +
+          '<span class="sort-now" id="group-now">' + esc(groupLabel(currentGroup())) + '</span>' +
           '<span class="sort-caret" aria-hidden="true">▼</span>' +
         '</button>' +
       '</div>';
   }
 
+  /* Sort and Group are lists, so they get panels; size is one number along a
+     range, and a slider says that in the width a chip would take. */
+  function sizeGroupHtml() {
+    var v = tileSize || TILE_DEFAULT;
+    return '' +
+      '<div class="fb-group fb-size">' +
+        '<span class="fb-label">Size</span>' +
+        '<input type="range" class="tile-range" id="tile-size"' +
+          ' min="' + TILE_MIN + '" max="' + TILE_MAX + '" step="2"' +
+          ' value="' + v + '" aria-label="Card size"' +
+          ' aria-valuetext="' + v + ' pixels">' +
+      '</div>';
+  }
+
+  /* The grid element is rebuilt per route, and applyFilters only rewrites its
+     contents, so the size is painted back on whenever a grid appears. */
+  function applyTileSize() {
+    var grid = document.getElementById('card-grid');
+    if (!grid) return;
+    if (tileSize) grid.style.setProperty('--tile-w', tileSize + 'px');
+    else grid.style.removeProperty('--tile-w');
+  }
+
+  function setTileSize(px) {
+    px = Math.max(TILE_MIN, Math.min(TILE_MAX, px | 0));
+    tileSize = px;
+    applyTileSize();
+    try { localStorage.setItem(TILE_KEY, String(px)); } catch (e) { /* private mode */ }
+  }
+
+  /* Panels open under the control that opened them, wherever that control has
+     ended up: the sort and group buttons ride the filter bar, which is a row
+     under the header on a narrow window and a rail down the left edge on a wide
+     one. Anchoring in CSS would need one rule per layout, and the rail's would
+     have to guess the button's height.
+
+     The panels are siblings of the bar — it scrolls its own overflow and would
+     clip them — so the coordinates are measured against whatever the panel is
+     positioned in, and clamped to the window on both axes. A panel with no room
+     below its button opens upward instead. */
+  var MENU_GAP = 8;
+
+  function placeMenu(menu, btn) {
+    if (!menu || !btn) return;
+    var host = menu.offsetParent || document.documentElement;
+    var hr = host.getBoundingClientRect();
+    var br = btn.getBoundingClientRect();
+    var w = menu.offsetWidth;
+    var h = menu.offsetHeight;
+
+    var left = Math.min(br.left, window.innerWidth - w - 12);
+    var below = br.bottom + MENU_GAP;
+    var top = (below + h > window.innerHeight && br.top - h - MENU_GAP > 0)
+      ? br.top - h - MENU_GAP
+      : Math.min(below, Math.max(12, window.innerHeight - h - 12));
+
+    menu.style.right = 'auto';
+    menu.style.left = Math.round(Math.max(12, left) - hr.left) + 'px';
+    menu.style.top = Math.round(top - hr.top) + 'px';
+  }
+
   function buildGroupMenu() {
     if (!groupMenu) return;
-    html(groupMenu, GROUPS.map(function (g) {
-      var on = g.code === state.group;
+    html(groupMenu, groupOptions().map(function (g) {
+      var on = g.code === currentGroup();
       return '<button type="button" class="pop-item' + (on ? ' on' : '') + '"' +
         ' role="option" aria-selected="' + (on ? 'true' : 'false') + '"' +
         ' data-group="' + esc(g.code) + '">' +
         '<span class="pop-tick" aria-hidden="true">✓</span>' +
         '<span class="pop-name">' + esc(g.label) + '</span>' +
-        (g.note ? '<span class="pop-note">' + esc(g.note) + '</span>' : '') +
       '</button>';
     }).join(''));
   }
@@ -784,14 +1162,7 @@
     if (open) { closePicker(); closeSort(); closeLang(); closeNav(); buildGroupMenu(); }
     groupMenu.hidden = !open;
     var btn = document.getElementById('group-btn');
-    /* Sort's panel hangs off the right edge of the header; Group sits further
-       left in the bar, so its panel is lined up with the button instead —
-       pulled back in when doing so would push it off the window. */
-    if (open && btn) {
-      var host = groupMenu.offsetParent || document.body;
-      var left = btn.getBoundingClientRect().left - host.getBoundingClientRect().left;
-      groupMenu.style.left = Math.max(12, Math.min(left, host.clientWidth - 222)) + 'px';
-    }
+    if (open) placeMenu(groupMenu, btn);
     if (btn) {
       btn.classList.toggle('on', open);
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -800,7 +1171,8 @@
 
   function setGroup(code) {
     closeGroup();
-    if (code === state.group) return;
+    if (code === currentGroup()) return;
+    if (isHome()) { homeView.group = code; if (homeData) paintHome(); return; }
     state.group = code;
     var now = document.getElementById('group-now');
     if (now) now.textContent = groupLabel(code);
@@ -809,14 +1181,13 @@
 
   function buildSortMenu() {
     if (!sortMenu) return;
-    html(sortMenu, SORTS.map(function (s) {
-      var on = s.code === state.sort;
+    html(sortMenu, sortOptions().map(function (s) {
+      var on = s.code === currentSort();
       return '<button type="button" class="pop-item' + (on ? ' on' : '') + '"' +
         ' role="option" aria-selected="' + (on ? 'true' : 'false') + '"' +
         ' data-sort="' + esc(s.code) + '">' +
         '<span class="pop-tick" aria-hidden="true">✓</span>' +
         '<span class="pop-name">' + esc(s.label) + '</span>' +
-        (s.note ? '<span class="pop-note">' + esc(s.note) + '</span>' : '') +
       '</button>';
     }).join(''));
   }
@@ -833,6 +1204,7 @@
     if (open) { closePicker(); closeLang(); closeNav(); closeGroup(); buildSortMenu(); }
     sortMenu.hidden = !open;
     var btn = document.getElementById('sort-btn');
+    if (open) placeMenu(sortMenu, btn);
     if (btn) {
       btn.classList.toggle('on', open);
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -867,6 +1239,8 @@
           replacedChipHtml() +
         '</div>' +
         '<div class="fb-group fb-tail">' +
+          sortGroupHtml() +
+          groupGroupHtml() +
           '<span class="chip" id="count-chip">' +
             (shown === total ? total + ' packs' : shown + ' of ' + total + ' packs') +
           '</span>' +
@@ -892,6 +1266,7 @@
         '<div class="fb-group fb-tail">' +
           sortGroupHtml() +
           groupGroupHtml() +
+          sizeGroupHtml() +
           /* role=status so the count — and the "loading…" that replaces it while
              a pack is fetched — is announced, not just drawn. */
           '<span class="chip" id="count-chip" role="status">' +
@@ -940,7 +1315,8 @@
 
   function setSort(code) {
     closeSort();
-    if (code === state.sort) return;
+    if (code === currentSort()) return;
+    if (isHome()) { homeView.sort = code; if (homeData) paintHome(); return; }
     state.sort = code;
     var now = document.getElementById('sort-now');
     if (now) now.textContent = sortLabel(code);
@@ -1018,6 +1394,7 @@
     html(pickerTools, replacedChipHtml());
     pickerQ.value = '';
     filterPicker('');
+    placeMenu(picker, add);      // after the list, which is what gives it its height
     pickerQ.focus();
   }
 
@@ -1163,10 +1540,14 @@
   function tileHtml(card) {
     var fac = facClass(card.faction_code);
     /* Front face only: a tile never rotates past 90°, so the reverse would be
-       a second image request for pixels nobody sees. */
-    var art = Card3D.html(card, { lazy: true, 'class': 'tile-img' }) ||
-      '<div class="tile-img' + (isLandscape(card) ? ' landscape' : '') + '">' +
-        '<span class="noimg">No image</span></div>';
+       a second image request for pixels nobody sees.
+
+       `upright`: every tile is portrait in the grid, investigators, acts and
+       agendas included. They are printed on their side, but a wide tile among
+       portrait ones breaks the row it sits in — the card stands on its side
+       here instead, and the detail view shows it the way it is printed. */
+    var art = Card3D.html(card, { lazy: true, upright: true, 'class': 'tile-img' }) ||
+      '<div class="tile-img"><span class="noimg">No image</span></div>';
 
     var facMark = Markup.hasFactionIcon(card.faction_code)
       ? Markup.iconHtml(card.faction_code, fac, card.faction_name, 'tile-fac')
@@ -1772,6 +2153,7 @@
   function route() {
     if (state.observer) { state.observer.disconnect(); state.observer = null; }
     Viewer.close();   // a back/forward press while the preview is open should dismiss it
+    SymViewer.close();
     closePicker();
     closeSort();
     closeGroup();
@@ -1792,6 +2174,7 @@
 
     if (!parts.length) return renderBrowser([], '');       // the index browses every card
     if (parts[0] === 'packs') return renderHome();
+    if (parts[0] === 'resources') return renderResources();
     if (parts[0] === 'search') return renderSearch(decodeURIComponent(parts[1] || '').toLowerCase());
     if (parts[0] === 'pack' && parts[1]) return renderPack(decodeURIComponent(parts[1]));
     if (parts[0] === 'card' && parts[1]) return renderCard(decodeURIComponent(parts[1]));
@@ -1908,6 +2291,15 @@
     applyFilters();
   });
 
+  /* The slider lives in a bar that is rewritten wholesale on every filter
+     change, so the handler rides the bar rather than the input. */
+  filterbar.addEventListener('input', function (e) {
+    var range = e.target.closest('#tile-size');
+    if (!range) return;
+    setTileSize(parseInt(range.value, 10));
+    range.setAttribute('aria-valuetext', tileSize + ' pixels');
+  });
+
   /* The picker stays open across picks so several packs can go in at once. */
   pickerList.addEventListener('click', function (e) {
     var item = e.target.closest('.pp-item');
@@ -1952,6 +2344,19 @@
     if (e.target.closest('a')) closeNav();
   });
 
+  /* Registered once against #view rather than per render: the element is reused
+     across routes and only its contents are replaced, so a listener added in
+     renderResources would stack up a copy per visit. */
+  view.addEventListener('click', function (e) {
+    var tile = e.target.closest && e.target.closest('.sym-tile');
+    if (!tile) return;
+    SymViewer.open({
+      url: tile.dataset.sym,
+      name: tile.dataset.name,
+      set: tile.dataset.set
+    });
+  });
+
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     if (!picker.hidden) closePicker();
@@ -1975,7 +2380,16 @@
     if (link) rememberScroll();
   }, true);
 
-  window.addEventListener('resize', syncHeadHeight);
+  /* A panel is placed against where its button was when it opened. Scrolling
+     the rail, or resizing the window, moves the button out from under it —
+     close rather than leave a panel pointing at nothing. */
+  function closePanels() { closeSort(); closeGroup(); closePicker(); }
+  filterbar.addEventListener('scroll', closePanels, { passive: true });
+
+  window.addEventListener('resize', function () {
+    syncHeadHeight();
+    closePanels();
+  });
   if (window.ResizeObserver) new ResizeObserver(syncHeadHeight).observe(head);
 
   window.addEventListener('hashchange', route);

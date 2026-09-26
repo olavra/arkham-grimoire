@@ -8,14 +8,15 @@ Theme modelled on the official [Arkham Horror site](https://www.arkhamhorror.com
 
 ## Running it
 
-The app talks to `arkhamdb.com` over CORS, so serve it over HTTP rather than opening
-`index.html` from disk:
+Serve it over HTTP rather than opening `index.html` from disk: the icons are CSS
+masks, which browsers fetch in CORS mode, and `file://` pages can't pass that check.
 
-```
-python -m http.server 8777
-```
+- **Windows:** double-click `run.bat`.
+- **Any OS with Node.js:** `npm start`.
 
-Then visit <http://127.0.0.1:8777/>.
+Both start a local server (no dependencies, `scripts/serve.js`) on
+<http://127.0.0.1:8777/> — or the next free port — and open it in the browser.
+Without Node, `run.bat` falls back to `python -m http.server 8777`.
 
 ## Structure
 
