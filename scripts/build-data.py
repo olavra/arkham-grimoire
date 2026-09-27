@@ -394,6 +394,26 @@ def membership(cards, packs):
 # derived fields
 
 
+def describe_packs(packs, members):
+    """The three fields the app reads from a pack that upstream does not store
+    under those names.
+
+    `known` is what the pack picker and the pack tile print: how many cards we
+    actually hold for that pack. It is the membership count, so the reprint
+    boxes report the cards the rules found for them rather than the nothing
+    upstream files under their code. `total` is the size printed on the box, so
+    the two differing is meaningful rather than a fault.
+
+    `available` is ArkhamDB's name for the release date, which upstream calls
+    date_release. The app sorts the catalogue by it and prints it on each tile;
+    without it the sort silently does nothing and the date shows blank."""
+    for pack in packs:
+        pack['known'] = len(members.get(pack['code'], ()))
+        pack['total'] = pack.get('size')
+        if pack.get('date_release'):
+            pack['available'] = pack['date_release']
+
+
 def derive(cards, packs, members, art, lookups):
     """Add the fields ArkhamDB computes at serve time and upstream does not
     store. Only the ones the app actually reads, plus the name lookups, which
@@ -577,6 +597,7 @@ def main():
     space_tokens(cards)
     members = membership(cards, packs)
     derive(cards, packs, members, art, lookups)
+    describe_packs(packs, members)
 
     have = available_locales()
     if args.all_locales:
