@@ -6,10 +6,13 @@
 The output is what the app reads instead of arkhamdb.com/api/public: one
 directory per locale, shaped like the endpoints it replaces.
 
-    public/data/meta.json                  what this build was made from
-    public/data/<locale>/packs.json        <- /api/public/packs/
-    public/data/<locale>/cards/all.json    <- /api/public/cards/?encounter=1
-    public/data/<locale>/cards/<pack>.json <- /api/public/cards/<pack>
+    db/meta.json                  what this build was made from
+    db/<locale>/packs.json        <- /api/public/packs/
+    db/<locale>/cards/all.json    <- /api/public/cards/?encounter=1
+    db/<locale>/cards/<pack>.json <- /api/public/cards/<pack>
+
+The tree sits at the site root because that is what the site serves: index.html
+is at the root, so the app fetches these as /db/<locale>/...
 
 Three inputs, in strict order of authority: upstream is the base, our overlay
 patches it, and the rules derive what can be derived. The order matters in one
@@ -59,7 +62,8 @@ separate change, in the app rather than here.
 
 Options:
 
-    --locale CODE   build one locale, repeatable (default: es, en)
+    --locale CODE   build one locale, repeatable (default: every locale the
+                    app offers)
     --all-locales   build every locale upstream translates
     --pretty        indent the JSON, for reading it rather than serving it
     --quiet         totals only
@@ -69,6 +73,7 @@ import collections
 import glob
 import json
 import os
+import re
 import sys
 import time
 
@@ -77,10 +82,11 @@ UPSTREAM = os.path.join(ROOT, 'data', 'upstream')
 OVERLAY = os.path.join(ROOT, 'data', 'overlay')
 CARDART = os.path.join(ROOT, 'data', 'cardart', 'manifest.json')
 LOCK = os.path.join(ROOT, 'data', 'upstream.lock')
-OUT = os.path.join(ROOT, 'public', 'data')
+OUT = os.path.join(ROOT, 'db')
 
-# What the app's locale picker offers today, plus the base language.
-DEFAULT_LOCALES = ('es', 'en')
+# Every locale the app's picker offers. Building fewer would leave the picker
+# with entries that 404.
+DEFAULT_LOCALES = ('es', 'en', 'de', 'fr', 'it', 'pt', 'pl', 'ru', 'uk', 'ko', 'zh')
 
 # Scans are served from here, in ArkhamDB's own layout -- see the docstring.
 IMG_PREFIX = '/bundles/cards/'
@@ -285,6 +291,52 @@ def resolve_stubs(cards):
     return resolved
 
 
+def mark_hidden(cards):
+    """Which cards are a reverse rather than a card of their own.
+
+    Upstream's `hidden` is unreliable on its own: it misses 38 cards that are
+    plainly the back of something, and wrongly claims 21 that are not. The
+    relationship it fails to consult is the one it already stores -- a card
+    named as some other card's `back_link` IS a reverse.
+
+        hidden = something links to it,
+                 or upstream says so and it links to nothing itself
+
+    Checked against a live API dump this matches ArkhamDB on 5927 of 5929
+    cards. The two it does not are promo investigators upstream marks hidden in
+    error, and they are corrected in the overlay rather than by weakening the
+    rule. faces.js depends on this: a card wrongly marked hidden is announced
+    to the reader as the back of something else."""
+    targets = {c['back_link'] for c in cards.values() if c.get('back_link')}
+    changed = 0
+    for card in cards.values():
+        was = bool(card.get('hidden'))
+        now = card['code'] in targets or (was and not card.get('back_link'))
+        if now != was:
+            changed += 1
+        card['hidden'] = now
+    if changed:
+        note('rules: hidden recomputed, %d cards changed' % changed)
+
+
+# Two icon tokens printed side by side are written [action][action] upstream
+# and served [action] [action] by ArkhamDB. markup.js draws each token as its
+# own span and adds no gap, so without this the two icons sit flush. It applies
+# to `text` alone: in `flavor` the same substitution makes matters worse.
+ADJACENT_TOKENS = re.compile(r'\]\[')
+
+
+def space_tokens(cards):
+    spaced = 0
+    for card in cards.values():
+        text = card.get('text')
+        if text and ADJACENT_TOKENS.search(text):
+            card['text'] = ADJACENT_TOKENS.sub('] [', text)
+            spaced += 1
+    if spaced:
+        note('rules: %d cards had adjacent icon tokens spaced' % spaced)
+
+
 def membership(cards, packs):
     """pack_code -> [card codes], applying the two expansion rules on top of
     what each card says about itself."""
@@ -386,7 +438,12 @@ def derive(cards, packs, members, art, lookups):
         front, back = art.get(code, (None, None))
         if front and not card.get('imagesrc'):
             card['imagesrc'] = IMG_PREFIX + front
-        if back and not card.get('backimagesrc'):
+        # A <code>b scan is only this card's other face when <code>b is not a
+        # card of its own. Where it is, the reverse is a separate record and is
+        # reached through linked_card -- and declaring backimagesrc as well
+        # would make faces.js prefer the bare image over the record, losing the
+        # reverse's name and text. Matches ArkhamDB on all 5929 shared cards.
+        if back and not card.get('backimagesrc') and (code + 'b') not in cards:
             card['backimagesrc'] = IMG_PREFIX + back
 
         # faces.js reads linked_to_code and the nested linked_card; upstream
@@ -442,22 +499,30 @@ def localize(cards, packs, cycles, locale):
     tdir = os.path.join(UPSTREAM, 'translations', locale)
     strings = {}
     for path in glob.glob(os.path.join(tdir, 'pack', '*', '*.json')):
-        for entry in load(path, []):
+        for index, entry in enumerate(load(path, [])):
+            # An entry with no code matches no card. Upstream has one such
+            # record; it is reported rather than allowed to fail the build,
+            # since nothing else in the locale depends on it.
+            if not isinstance(entry, dict) or 'code' not in entry:
+                note('%s: entry %d of %s has no code, skipped'
+                     % (locale, index, os.path.basename(path)))
+                continue
             strings[entry['code']] = entry
 
     applied = 0
     out = {}
     for code, card in cards.items():
-        entry = strings.get(code)
-        if not entry:
-            out[code] = card
-            continue
+        # Always a copy, even with nothing to translate: pack_name is rewritten
+        # below, and handing back the shared record would write this locale's
+        # names into every locale built after it.
         copy = dict(card)
-        for field in TRANSLATABLE:
-            if field in entry:
-                copy[field] = entry[field]
+        entry = strings.get(code)
+        if entry:
+            for field in TRANSLATABLE:
+                if field in entry:
+                    copy[field] = entry[field]
+            applied += 1
         out[code] = copy
-        applied += 1
 
     names = {p['code']: p.get('name') for p in load(os.path.join(tdir, 'packs.json'), [])}
     cnames = {c['code']: c.get('name') for c in load(os.path.join(tdir, 'cycles.json'), [])}
@@ -508,6 +573,8 @@ def main():
     }
 
     resolve_stubs(cards)
+    mark_hidden(cards)
+    space_tokens(cards)
     members = membership(cards, packs)
     derive(cards, packs, members, art, lookups)
 

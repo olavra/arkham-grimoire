@@ -1,13 +1,28 @@
-/* ArkhamDB API client — https://arkhamdb.com/api/doc */
+/* Card data client — our own database under /db/, built by scripts/build-data.py.
+
+   This used to call arkhamdb.com/api/public directly. The endpoints it replaces
+   are still visible in the paths, because the build emits the same shapes:
+
+     /api/public/packs/            -> /db/<locale>/packs.json
+     /api/public/cards/?encounter=1 -> /db/<locale>/cards/all.json
+     /api/public/cards/<pack>      -> /db/<locale>/cards/<pack>.json
+     /api/public/card/<code>       -> resolved from all.json; see getCard
+
+   What that buys, beyond not depending on someone else's uptime: the cards
+   ArkhamDB does not serve (Children of Blood), the packs it files wrongly (the
+   promo Roland Banks is 98004 of The Dirge of Reason, not a Core Set card), and
+   the reissue and reprint boxes it reports as empty. See scripts/build-data.py.
+
+   Card art is a separate question and still comes from ArkhamDB: imagesrc is
+   emitted in its /bundles/cards/ form and resolved against the canonical host
+   by imageUrl, exactly as before. */
 (function (global) {
   'use strict';
 
-  /* ArkhamDB serves each translation from its own subdomain — there is no
-     locale query parameter, `?_locale=es` is answered in English. Card scans
-     under /bundles/cards/ are byte-identical on every subdomain, so images stay
-     pinned to the canonical host: switching language then costs one JSON
-     request, not a re-download of the art. */
-  var CANON = 'https://arkhamdb.com';
+  /* The ArkhamDB site, for the outbound links on a card's detail page. It is no
+     longer where any data comes from, and locale no longer changes a host --
+     only which directory under /db/ is read. */
+  var ARKHAMDB = 'https://arkhamdb.com';
   var LOCALES = [
     { code: 'es', label: 'Español' },
     { code: 'en', label: 'English' },
@@ -24,13 +39,20 @@
   var DEFAULT_LOCALE = 'es';
   var STORE_KEY = 'ag:locale';
 
+  /* Every locale listed above is built by scripts/build-data.py; adding one
+     here without building it would leave the picker with an entry that 404s. */
+
   function known(code) {
     for (var i = 0; i < LOCALES.length; i++) if (LOCALES[i].code === code) return true;
     return false;
   }
 
-  function originFor(code) {
-    return code === 'en' ? CANON : 'https://' + code + '.arkhamdb.com';
+  /* Absolute from the site root: the app runs at / with hash routes, and the
+     data sits beside index.html. */
+  function baseFor(code) { return '/db/' + code; }
+
+  function siteFor(code) {
+    return code === 'en' ? ARKHAMDB : 'https://' + code + '.arkhamdb.com';
   }
 
   /* Private browsing can make localStorage throw on read as well as write. */
@@ -40,8 +62,8 @@
 
   var saved = stored();
   var locale = known(saved) ? saved : DEFAULT_LOCALE;
-  var ORIGIN = originFor(locale);
-  var BASE = ORIGIN + '/api/public';
+  var BASE = baseFor(locale);
+  var ORIGIN = siteFor(locale);
 
   /* In-memory caches. The "all cards" payload is ~9 MB, far past the
      sessionStorage quota, so everything stays on the heap for the tab. */
@@ -62,7 +84,7 @@
     if (inflight[url]) return inflight[url];
     var p = fetch(url, { headers: { Accept: 'application/json' } })
       .then(function (res) {
-        if (!res.ok) throw new Error('ArkhamDB responded ' + res.status + ' for ' + url);
+        if (!res.ok) throw new Error('card database responded ' + res.status + ' for ' + url);
         return res.json();
       })
       .then(function (data) {
@@ -87,11 +109,10 @@
     return cards;
   }
 
-  /* No /cycles/ request: that endpoint has been answering 500 for a long time,
-     and an error page carries no Access-Control-Allow-Origin, so the browser
-     reported every call as a CORS failure in the console. Packs only carry a
-     cycle_position, never a cycle name, so the cycle headings come from the
-     static table in app.js instead.  */
+  /* Cycle names now ride on each pack as cycle_name, put there by the build
+     from the upstream cycles.json — so there is no separate cycle request, and
+     no static table to keep in step either. The old /cycles/ endpoint answered
+     500 for years, which is what the table in app.js was working around. */
 
   /* ArkhamDB files a "Books" pack in the Promotional cycle that holds no cards
      of its own: the novella cards live under each novella's pack. It would be
@@ -99,11 +120,12 @@
      be caught by an empty card count, which the reprint boxes share. */
   var EMPTY_PACKS = { books: true };
 
-  /* Packs, newest cycle last. */
+  /* Packs, newest cycle last. The build already emits them in this order; the
+     sort is kept so the app does not depend on that. */
   function getPacks() {
     if (cache.packs) return Promise.resolve(cache.packs);
     var g = gen;
-    return getJSON(BASE + '/packs/').then(function (packs) {
+    return getJSON(BASE + '/packs.json').then(function (packs) {
       var sorted = packs.filter(function (p) {
         return !EMPTY_PACKS[p.code];
       }).sort(function (a, b) {
@@ -126,17 +148,23 @@
     }).catch(function () { return null; });
   }
 
-  /* Cards for one pack, or the whole collection when packCode is '_all'
-     (encounter=1 includes encounter-deck cards, not just player cards).
+  function cardsUrl(packCode) {
+    return BASE + '/cards/' + (packCode === '_all' ? 'all' : encodeURIComponent(packCode)) + '.json';
+  }
+
+  /* Cards for one pack, or the whole collection when packCode is '_all'.
      Default order is by set — packs in release order, cards by their number
-     inside the pack. */
+     inside the pack.
+
+     A pack's file holds every card in that product, which is not the same as
+     every card whose pack_code is that pack: a Revised Core card and a reprint
+     box's contents keep the pack_code of where they were printed. So a card can
+     appear in more than one pack file, and its own pack_code is what the sort
+     below keys on. */
   function getCards(packCode) {
     if (cache.cards[packCode]) return Promise.resolve(cache.cards[packCode]);
-    var url = packCode === '_all'
-      ? BASE + '/cards/?encounter=1'
-      : BASE + '/cards/' + encodeURIComponent(packCode);
     var g = gen;
-    return Promise.all([getJSON(url), packRank()]).then(function (res) {
+    return Promise.all([getJSON(cardsUrl(packCode)), packRank()]).then(function (res) {
       var cards = res[0], rank = res[1];
       cards.sort(function (a, b) {
         if (a.pack_code === b.pack_code) return a.position - b.position;
@@ -151,12 +179,19 @@
     });
   }
 
-  /* A single card. Served from whatever pack is already loaded when possible. */
+  /* A single card. There is no per-card file — 6000 of them per locale is a lot
+     of files to deploy for something the full pool already answers — so a code
+     that is not on the heap yet is served by loading the pool and indexing it.
+     That is one 9 MB request at worst, cached for the tab, and it is only ever
+     reached by opening a card link directly; browsing the grid has already
+     loaded a pack by then. */
   function getCard(code) {
     if (cache.byCode[code]) return Promise.resolve(cache.byCode[code]);
     var g = gen;
-    return getJSON(BASE + '/card/' + encodeURIComponent(code)).then(function (card) {
-      return fresh(g) ? remember(card) : card;
+    return getCards('_all').then(function () {
+      var card = cache.byCode[code];
+      if (!card) throw new Error('no card ' + code + ' in the database');
+      return fresh(g) ? card : card;
     });
   }
 
@@ -164,16 +199,22 @@
      that can do without an answer use this rather than firing a request. */
   function cached(code) { return cache.byCode[code] || null; }
 
-  /* The endpoint getCard would hit — shown on the detail page for debugging. */
+  /* The file a card is served from — shown on the detail page for debugging.
+     Every card is in the pool; a pack file would need the pack, which the
+     caller may not have. */
   function cardUrl(code) {
-    return BASE + '/card/' + encodeURIComponent(code);
+    return cardsUrl('_all');
   }
 
-  /* Art is the same file on every subdomain — always the canonical one, so a
-     language switch keeps every image already in the browser cache. */
+  /* Art is still ArkhamDB's, and the same file on every subdomain — always the
+     canonical host, so a language switch keeps every image already in the
+     browser cache. A card the build added itself carries an absolute or
+     site-relative imagesrc and is returned untouched. */
   function imageUrl(src) {
     if (!src) return null;
-    return /^https?:/.test(src) ? src : CANON + src;
+    if (/^https?:/.test(src)) return src;
+    if (src.indexOf('/bundles/') === 0) return ARKHAMDB + src;
+    return src;
   }
 
   /* Every cached payload is locale-bound, so switching language empties the lot
@@ -184,8 +225,8 @@
     if (!known(code) || code === locale) return false;
     locale = code;
     gen++;
-    ORIGIN = originFor(code);
-    BASE = ORIGIN + '/api/public';
+    BASE = baseFor(code);
+    ORIGIN = siteFor(code);
     global.API.origin = ORIGIN;
 
     cache.packs = null;

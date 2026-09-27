@@ -37,5 +37,5 @@ data/cardart/
 # data/upstream.lock, which IS committed.
 data/upstream/
 
-# Build output.
-public/data/
+# Build output: the card database the app fetches, served from the site root.
+db/
