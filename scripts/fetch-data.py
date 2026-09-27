@@ -6,8 +6,8 @@ Run from the project root:
     python scripts/fetch-data.py --pin      # re-checkout the SHA in the lockfile
     python scripts/fetch-data.py --status    # say what is there, fetch nothing
 
-Upstream lands in data/upstream/, which is generated and gitignored: nothing in
-there is ever edited. Our own changes live in data/overlay/ and are applied by
+Upstream lands in data/database-json/, which is generated and gitignored: nothing in
+there is ever edited. Our own changes live in data/database-overlay/ and are applied by
 build-data.py, so an upstream update can never conflict with them -- there is
 only ever one copy of each upstream file, and it is theirs.
 
@@ -33,7 +33,7 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEST = os.path.join(ROOT, 'data', 'upstream')
+DEST = os.path.join(ROOT, 'data', 'database-json')
 LOCK = os.path.join(ROOT, 'data', 'upstream.lock')
 
 REMOTE = 'https://github.com/Kamalisk/arkhamdb-json-data.git'
@@ -153,7 +153,7 @@ def report():
         print('  subject %s' % lock.get('subject'))
         print('  fetched %s' % lock.get('fetched'))
     if not complete(DEST):
-        print('checkout: missing or incomplete at data/upstream/')
+        print('checkout: missing or incomplete at data/database-json/')
         return
     sha = head(DEST)
     packs, files, cards, locales = counts()

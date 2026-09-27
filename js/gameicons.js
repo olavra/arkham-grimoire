@@ -1,9 +1,9 @@
 /* Expansion symbols.
 
-   The SVGs in img/game_icons/ are named after the printed expansion symbol,
+   The SVGs in data/icons/ are named after the printed expansion symbol,
    which is not what ArkhamDB calls the pack or the encounter set, so the two
    sides are matched here. The mapping itself is kept as a table in
-   img/game_icons/game_icons_map.csv, and this file is generated from it: to
+   data/icons/game_icons_map.csv, and this file is generated from it: to
    change an assignment, edit that CSV and regenerate.
 
    PACKS is keyed by ArkhamDB pack `code` and holds the symbol of the box the
@@ -13,9 +13,9 @@
 (function (global) {
   'use strict';
 
-  var DIR = 'img/game_icons/';
+  var DIR = 'data/icons/';
 
-  /* pack code -> file under img/game_icons/ */
+  /* pack code -> file under data/icons/ */
   var PACKS = {
     'and':         "Chapter 02/202 - Investigator Decks/Andr\u00e9-Patel.svg",
     'aof':         "Chapter 01/00 - Core/Parallel-Investigator.svg",
@@ -134,7 +134,7 @@
     'wos':         "Chapter 01/05 - The Circle Undone/TCU-The-Wages-of-Sin.svg"
   };
 
-  /* encounter set code -> file under img/game_icons/ */
+  /* encounter set code -> file under data/icons/ */
   var SETS = {
     'a_light_in_the_fog':                             "Chapter 01/07 - The Innsmouth Conspiracy/TIC-A-Light-in-the-Fog.svg",
     'a_phantom_of_truth':                             "Chapter 01/03 - The Path to Carcosa/PTC-A-Phantom-of-Truth.svg",

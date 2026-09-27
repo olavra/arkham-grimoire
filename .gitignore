@@ -18,11 +18,10 @@ npm-debug.log*
 # Node (not used yet, but keep out if added)
 node_modules/
 
-# Pack-art source images (large, 1-1.5MB each): kept locally to feed
-# docs/regen-packart.py, never pushed. Only the small generated tiles
-# in img/packs-art/tiles/ are tracked, since that's what the page loads.
-img/packs-art/*
-!img/packs-art/tiles/
+# Pack-art sources (large, 1-1.5MB each): kept locally to feed
+# docs/regen-packart.py, never pushed. The small tiles it generates live in
+# data/pack-art/ and ARE tracked, since that is what the page loads.
+data/pack-art-source/
 
 # Per-user Claude Code settings, not project config.
 .claude/settings.local.json
@@ -30,12 +29,12 @@ img/packs-art/*
 # Local mirror of the ArkhamDB card scans, filled by docs/fetch-cardart.py:
 # ~7600 files, ~850 MB, re-downloadable at any time. The manifest is what makes
 # a re-run incremental, so it stays with the images rather than in the repo.
-data/cardart/
+data/card-art/
 
 # Upstream card data, cloned by scripts/fetch-data.py. Generated and never
 # edited: our changes live in data/overlay/. The commit used is recorded in
 # data/upstream.lock, which IS committed.
-data/upstream/
+data/database-json/
 
 # Build output: the card database the app fetches, served from the site root.
 db/

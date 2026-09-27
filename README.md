@@ -35,7 +35,25 @@ img/icons/            every icon glyph as a standalone SVG, plus health/sanity
 img/factions/         ArkhamDB's 16px class plates (reference)
 docs/icons.md         the icon index
 docs/regen-icons.py   re-pulls the icon assets from ArkhamDB
+
+data/                 everything the card database is built from and with
+data/database-json/   upstream card data, cloned (generated, gitignored)
+data/database-overlay/ our corrections and our own packs
+data/upstream.lock    the upstream commit the build used
+data/card-art/        mirror of every card scan (generated, gitignored, ~860 MB)
+data/icons/           expansion and encounter-set symbols, served
+data/pack-art/        pack tiles, generated from the sources below, served
+data/pack-art-source/ full-size pack art (gitignored; feeds regen-packart.py)
+db/                   the built card database the app fetches (generated)
+
+scripts/fetch-data.py   clone or update upstream, write the lockfile
+scripts/build-data.py   upstream + overlay + rules -> db/
+docs/fetch-cardart.py   mirror the card scans into data/card-art/
 ```
+
+Two directories are called icons and they hold different things:
+`img/icons/` is the glyphs used inside card text, `data/icons/` the expansion
+symbols shown beside a pack or an encounter set.
 
 ## Filtering a pack
 

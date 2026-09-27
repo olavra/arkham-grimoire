@@ -53,7 +53,7 @@ appear in more than one of them.
 IMAGES
 
 Upstream carries no image paths at all; ArkhamDB derives them, and so do we,
-from data/cardart/manifest.json -- the mirror written by docs/fetch-cardart.py.
+from data/card-art/manifest.json -- the mirror written by docs/fetch-cardart.py.
 The manifest is what says whether a scan exists and whether it is .png or .jpg,
 which cannot be guessed: 1806 of them are .jpg. Paths are emitted in ArkhamDB's
 own `/bundles/cards/<file>` form so that the app's existing API.imageUrl keeps
@@ -78,9 +78,9 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UPSTREAM = os.path.join(ROOT, 'data', 'upstream')
-OVERLAY = os.path.join(ROOT, 'data', 'overlay')
-CARDART = os.path.join(ROOT, 'data', 'cardart', 'manifest.json')
+UPSTREAM = os.path.join(ROOT, 'data', 'database-json')
+OVERLAY = os.path.join(ROOT, 'data', 'database-overlay')
+CARDART = os.path.join(ROOT, 'data', 'card-art', 'manifest.json')
 LOCK = os.path.join(ROOT, 'data', 'upstream.lock')
 OUT = os.path.join(ROOT, 'db')
 
@@ -160,7 +160,7 @@ def read_packs():
         elif over.get('__new'):
             cycles[code] = patch({'code': code}, over)
         else:
-            note('overlay/cycles.json: %s is not an upstream cycle; '
+            note('database-overlay/cycles.json: %s is not an upstream cycle; '
                  'add "__new": true to create it' % code)
 
     created = dropped = patched = 0
@@ -177,7 +177,7 @@ def read_packs():
             packs[code] = patch({'code': code}, over)
             created += 1
         else:
-            note('overlay/packs.json: %s is not an upstream pack; '
+            note('database-overlay/packs.json: %s is not an upstream pack; '
                  'add "__new": true to create it' % code)
     if created or dropped or patched:
         note('packs: %d patched, %d created, %d dropped by the overlay'
@@ -216,7 +216,7 @@ def read_cards():
             card = dict(card)
             card.setdefault('_encounter', bool(card.get('encounter_code')))
             if card['code'] in cards:
-                note('overlay/cards/%s: %s already exists upstream; '
+                note('database-overlay/cards/%s: %s already exists upstream; '
                      'patch it in fixes.json instead of redefining it'
                      % (os.path.basename(path), card['code']))
             cards[card['code']] = card
@@ -227,7 +227,7 @@ def read_cards():
     dropped = patched = 0
     for code, over in (load(os.path.join(OVERLAY, 'fixes.json'), {}) or {}).items():
         if code not in cards:
-            note('overlay/fixes.json: %s is not a known card' % code)
+            note('database-overlay/fixes.json: %s is not a known card' % code)
             continue
         merged = patch(cards[code], over)
         if merged is None:
@@ -247,7 +247,7 @@ def read_art():
     data is still worth building."""
     manifest = load(CARDART)
     if not manifest:
-        note('data/cardart/manifest.json not found -- no image paths emitted. '
+        note('data/card-art/manifest.json not found -- no image paths emitted. '
              'Run docs/fetch-cardart.py.')
         return {}
     files = {entry['file'] for entry in manifest.get('files', {}).values()}

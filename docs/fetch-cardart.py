@@ -1,4 +1,4 @@
-"""Mirror every card scan ArkhamDB holds into data/cardart/.
+"""Mirror every card scan ArkhamDB holds into data/card-art/.
 
 Run from the project root, as often as you like:
 
@@ -25,9 +25,9 @@ es.arkhamdb.com as well: card text is translated, card art is not.
 
 Writes:
 
-    data/cardart/<code>[b].<ext>   the scans, named as ArkhamDB names them
-    data/cardart/manifest.json     per-file etag, length and digest
-    data/cardart/no-art.json       the cards the API lists with no scan at all
+    data/card-art/<code>[b].<ext>   the scans, named as ArkhamDB names them
+    data/card-art/manifest.json     per-file etag, length and digest
+    data/card-art/no-art.json       the cards the API lists with no scan at all
 
 The manifest is what makes a run incremental, so it lives with the images:
 delete it and the next run re-downloads everything. Both JSON files are
@@ -56,13 +56,13 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, 'data', 'cardart')
+OUT = os.path.join(ROOT, 'data', 'card-art')
 MANIFEST = os.path.join(OUT, 'manifest.json')
 NO_ART = os.path.join(OUT, 'no-art.json')
 
 HOST = 'arkhamdb.com'
 CARDS_URL = 'https://' + HOST + '/api/public/cards/?encounter=1'
-UA = 'arkham-grimoire cardart sync (local mirror)'
+UA = 'arkham-grimoire card-art sync (local mirror)'
 
 # ArkhamDB 500s intermittently under load, and a mirror run makes thousands of
 # requests, so a failure is ordinary rather than exceptional.
