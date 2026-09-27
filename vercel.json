@@ -25,7 +25,7 @@
       ]
     },
     {
-      "source": "/data/(icons|pack-art|pack-box-art)/(.*)",
+      "source": "/data/(icons|pack-art|pack-box-art|card-art-extra)/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=604800, immutable" }
       ]

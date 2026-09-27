@@ -40,6 +40,7 @@ data/database-json/   upstream card data, cloned (generated, gitignored)
 data/database-overlay/ our corrections and our own packs
 data/database-json.lock    the upstream commit the build used
 data/card-art/        mirror of every card scan (generated, gitignored, ~860 MB)
+data/card-art-extra/  hand-added scans for cards ArkhamDB has no art for
 data/icons/           every game symbol: expansions, encounter sets, tokens, skills
 data/pack-box-art/    the printed box art for each pack, served
 data/pack-art/        pack tiles, generated from the sources below, served

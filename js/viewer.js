@@ -393,7 +393,7 @@
 
     var landscape = Card3D.isLandscape(card);
     var deckBack = CardBack.backFor(card);
-    var art = Faces.art(card);               // API scan, then img/cards/<code>.png
+    var art = Faces.art(card);               // API scan, then data/card-art-extra/<code>.png
     var reverse = Faces.back(card);          // this card's scan or its linked card's
 
     /* Only real card art is measured against the frame — see Card3D's
