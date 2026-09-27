@@ -32,10 +32,10 @@
 
   var BATCH = 60;
 
-  /* Cycle names, keyed by cycle_position. Packs only carry the position, and
-     /api/public/cycles/ is returning 500, so these mirror the upstream
-     arkhamdb-json-data cycle list; the live endpoint overrides them if it comes
-     back. Positions 50 and up are ArkhamDB's grouping buckets, not real cycles. */
+  /* Cycle names, keyed by cycle_position. Packs only carry the position and
+     /api/public/cycles/ answers 500, so this table — mirroring the upstream
+     arkhamdb-json-data cycle list — is the only source of cycle names.
+     Positions 50 and up are ArkhamDB's grouping buckets, not real cycles. */
   var CYCLE_LABELS = {
     1: 'Core',
     2: 'The Dunwich Legacy',
@@ -63,8 +63,7 @@
      that suffix — the shortest result is the bare cycle name. */
   var EXPANSION_SUFFIX = /\s+(?:Investigator|Campaign)\s+Expansion$/i;
 
-  function cycleLabel(position, group, live) {
-    if (live && live[position]) return live[position];
+  function cycleLabel(position, group) {
     if (CYCLE_LABELS[position]) return CYCLE_LABELS[position];
     return group.map(function (p) { return p.name.replace(EXPANSION_SUFFIX, ''); })
       .reduce(function (a, b) { return b.length < a.length ? b : a; });
@@ -259,7 +258,7 @@
      default; the Superseded switch in the pack filters drops them for a
      collection-shaped catalogue. */
   var showReplaced = true;
-  var homeData = null;                      // {packs, cycles}; lets the toggle repaint without refetching
+  var homeData = null;                      // {packs}; lets the toggle repaint without refetching
   /* chapter -> true for the chapters folded away. Survives repaints and
      re-entering the home route. */
   var collapsedChapters = Object.create(null);
@@ -397,10 +396,10 @@
 
     if (homeData) { paintHome(); restoreScroll(PACKS_HASH); return; }
 
-    Promise.all([API.getPacks(), API.getCycles()]).then(function (res) {
+    API.getPacks().then(function (packs) {
       if (token !== state.token) return;
-      homeData = { packs: res[0], cycles: res[1] };
-      indexPacks(res[0]);
+      homeData = { packs: packs };
+      indexPacks(packs);
       paintHome();
       restoreScroll(PACKS_HASH);
     }).catch(function (err) { if (token === state.token) failure(err); });
@@ -452,7 +451,7 @@
       var body = '';
       bucket.order.forEach(function (cyc) {
         var group = bucket.groups[cyc];
-        var label = cycleLabel(cyc, group, homeData.cycles);
+        var label = cycleLabel(cyc, group);
         /* A cycle is a fixed block, not a disclosure: most hold two or three
            packs, and folding each one away cost more scrolling than it saved.
            Blocks sit side by side while the row has room. */
@@ -1345,7 +1344,7 @@
         out += '<div class="pp-head" data-cycle="' + esc(String(cycle)) + '">' +
           esc(cycleLabel(cycle, packList.filter(function (q) {
             return q.cycle_position === cycle;
-          }), homeData && homeData.cycles)) + '</div>';
+          }))) + '</div>';
       }
       out += '<button type="button" class="pp-item" data-code="' + esc(p.code) + '"' +
         (p.replaced === true ? ' data-replaced="1"' : '') +

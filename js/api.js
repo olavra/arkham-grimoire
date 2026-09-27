@@ -47,7 +47,6 @@
      sessionStorage quota, so everything stays on the heap for the tab. */
   var cache = {
     packs: null,
-    cycles: undefined,          // position -> cycle name; null once /cycles/ has failed
     cards: Object.create(null), // pack_code -> card[]   ('_all' for the full pool)
     byCode: Object.create(null) // card code -> card
   };
@@ -88,25 +87,11 @@
     return cards;
   }
 
-  /* Cycle names, keyed by cycle position. This endpoint has been answering 500
-     for a while and packs only carry a cycle_position, never a cycle name, so
-     the caller keeps a static table to fall back on. A failure resolves to null
-     instead of rejecting — a missing heading must not take the pack list down. */
-  function getCycles() {
-    if (cache.cycles !== undefined) return Promise.resolve(cache.cycles);
-    var g = gen;
-    return getJSON(BASE + '/cycles/').then(function (cycles) {
-      var byPosition = Object.create(null);
-      cycles.forEach(function (c) {
-        if (c && c.position !== undefined && c.name) byPosition[c.position] = c.name;
-      });
-      if (fresh(g)) cache.cycles = byPosition;
-      return byPosition;
-    }).catch(function () {
-      if (fresh(g)) cache.cycles = null;
-      return null;
-    });
-  }
+  /* No /cycles/ request: that endpoint has been answering 500 for a long time,
+     and an error page carries no Access-Control-Allow-Origin, so the browser
+     reported every call as a CORS failure in the console. Packs only carry a
+     cycle_position, never a cycle name, so the cycle headings come from the
+     static table in app.js instead.  */
 
   /* ArkhamDB files a "Books" pack in the Promotional cycle that holds no cards
      of its own: the novella cards live under each novella's pack. It would be
@@ -204,7 +189,6 @@
     global.API.origin = ORIGIN;
 
     cache.packs = null;
-    cache.cycles = undefined;
     cache.cards = Object.create(null);
     cache.byCode = Object.create(null);
     inflight = Object.create(null);
@@ -215,7 +199,6 @@
 
   global.API = {
     getPacks: getPacks,
-    getCycles: getCycles,
     getCards: getCards,
     getCard: getCard,
     cached: cached,
