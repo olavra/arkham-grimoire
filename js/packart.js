@@ -22,6 +22,7 @@
     'bsr': 'tiles/bsr.jpg',
     'btb': 'tiles/btb.jpg',
     'car': 'tiles/car.jpg',
+    'cob': 'tiles/cob.jpg',
     'coh': 'tiles/coh.jpg',
     'core': 'tiles/core.jpg',
     'core_2026': 'tiles/core_2026.jpg',

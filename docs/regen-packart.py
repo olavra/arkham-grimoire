@@ -16,7 +16,7 @@ opened. It then rewrites js/packart.js, the code -> tile map app.js reads,
 so a pack only asks for art that exists and the rest keep the star field
 without a 404 each.
 
-Each code is checked against ArkhamDB's pack list; a file whose code is not
+Each code is checked against the pack list in db/ (see scripts/build-data.py); a file whose code is not
 a pack is reported and left out, since no tile would ever ask for it. If the
 list cannot be fetched (offline), every file is taken on trust.
 
@@ -58,8 +58,22 @@ def cover_crop(img):
     return img.crop((left, top, left + TILE_W, top + TILE_H))
 
 
-def arkhamdb_codes():
-    """The set of ArkhamDB pack codes, or None if the list cannot be fetched."""
+def known_codes():
+    """The set of pack codes a tile may be keyed on, or None when there is no
+    list to check against.
+
+    Our own database first: it is what the site reads, and it holds packs
+    ArkhamDB does not serve -- Children of Blood among them, whose art was
+    being skipped here as an unknown code. The API is the fallback for a
+    checkout where the database has not been built yet."""
+    local = os.path.join(ROOT, 'db', 'en', 'packs.json')
+    try:
+        with open(local, encoding='utf-8') as fh:
+            return {p['code'] for p in json.load(fh)}
+    except (OSError, ValueError):
+        pass
+    print('  (db/ not built; falling back to the ArkhamDB pack list. '
+          'Run scripts/build-data.py for the full set.)', file=sys.stderr)
     try:
         with urllib.request.urlopen(PACKS_URL, timeout=15) as res:
             return {p['code'] for p in json.load(res)}
@@ -71,7 +85,7 @@ def arkhamdb_codes():
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    known = arkhamdb_codes()
+    known = known_codes()
     tiles, skipped, unknown = {}, [], []
     for name in sorted(os.listdir(SRC)):
         path = os.path.join(SRC, name)
@@ -129,7 +143,7 @@ def main():
         print('  skipped %s: expected <arkhamdb-code> or <prefix>-<arkhamdb-code>' % name,
               file=sys.stderr)
     for name, code in unknown:
-        print('  skipped %s: "%s" is not an ArkhamDB pack code' % (name, code), file=sys.stderr)
+        print('  skipped %s: "%s" is not a pack code in the database' % (name, code), file=sys.stderr)
 
 
 if __name__ == '__main__':
