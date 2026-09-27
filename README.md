@@ -39,7 +39,7 @@ docs/regen-icons.py   re-pulls the icon assets from ArkhamDB
 data/                 everything the card database is built from and with
 data/database-json/   upstream card data, cloned (generated, gitignored)
 data/database-overlay/ our corrections and our own packs
-data/upstream.lock    the upstream commit the build used
+data/database-json.lock    the upstream commit the build used
 data/card-art/        mirror of every card scan (generated, gitignored, ~860 MB)
 data/icons/           expansion and encounter-set symbols, served
 data/pack-art/        pack tiles, generated from the sources below, served

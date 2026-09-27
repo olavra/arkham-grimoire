@@ -81,7 +81,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPSTREAM = os.path.join(ROOT, 'data', 'database-json')
 OVERLAY = os.path.join(ROOT, 'data', 'database-overlay')
 CARDART = os.path.join(ROOT, 'data', 'card-art', 'manifest.json')
-LOCK = os.path.join(ROOT, 'data', 'upstream.lock')
+LOCK = os.path.join(ROOT, 'data', 'database-json.lock')
 OUT = os.path.join(ROOT, 'db')
 
 # Every locale the app's picker offers. Building fewer would leave the picker

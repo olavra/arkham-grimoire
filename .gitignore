@@ -33,7 +33,7 @@ data/card-art/
 
 # Upstream card data, cloned by scripts/fetch-data.py. Generated and never
 # edited: our changes live in data/overlay/. The commit used is recorded in
-# data/upstream.lock, which IS committed.
+# data/database-json.lock, which IS committed.
 data/database-json/
 
 # Build output: the card database the app fetches, served from the site root.

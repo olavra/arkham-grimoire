@@ -11,7 +11,7 @@ there is ever edited. Our own changes live in data/database-overlay/ and are app
 build-data.py, so an upstream update can never conflict with them -- there is
 only ever one copy of each upstream file, and it is theirs.
 
-What is committed instead is data/upstream.lock: the commit the last build used.
+What is committed instead is data/database-json.lock: the commit the last build used.
 That is what makes a build reproducible without carrying 33 MB of someone else's
 repository in our history, and it is the reason this is a fetch script rather
 than a submodule. A submodule would pin the same SHA but drag its checkout into
@@ -34,7 +34,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEST = os.path.join(ROOT, 'data', 'database-json')
-LOCK = os.path.join(ROOT, 'data', 'upstream.lock')
+LOCK = os.path.join(ROOT, 'data', 'database-json.lock')
 
 REMOTE = 'https://github.com/Kamalisk/arkhamdb-json-data.git'
 BRANCH = 'master'
@@ -184,7 +184,7 @@ def main():
 
     if args.pin:
         if not lock or not lock.get('commit'):
-            raise SystemExit('nothing to pin to: data/upstream.lock is missing')
+            raise SystemExit('nothing to pin to: data/database-json.lock is missing')
         if not complete(DEST):
             clone()
         pin(lock['commit'])
