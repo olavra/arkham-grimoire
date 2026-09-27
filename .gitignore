@@ -26,3 +26,16 @@ img/packs-art/*
 
 # Per-user Claude Code settings, not project config.
 .claude/settings.local.json
+
+# Local mirror of the ArkhamDB card scans, filled by docs/fetch-cardart.py:
+# ~7600 files, ~850 MB, re-downloadable at any time. The manifest is what makes
+# a re-run incremental, so it stays with the images rather than in the repo.
+data/cardart/
+
+# Upstream card data, cloned by scripts/fetch-data.py. Generated and never
+# edited: our changes live in data/overlay/. The commit used is recorded in
+# data/upstream.lock, which IS committed.
+data/upstream/
+
+# Build output.
+public/data/
