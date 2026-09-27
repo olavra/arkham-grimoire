@@ -1631,7 +1631,7 @@
   }
 
   /* stat kinds Markup can draw an icon for — font glyphs, plus health and
-     sanity from img/icons/ */
+     sanity from data/icons/ */
   var STAT_ICONS = {
     willpower: 'willpower', intellect: 'intellect',
     combat: 'combat', agility: 'agility',

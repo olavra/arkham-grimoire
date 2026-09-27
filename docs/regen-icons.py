@@ -3,9 +3,12 @@
 
     python docs/regen-icons.py
 
-Downloads the icon font + the class-symbol PNGs, extracts every glyph in the font
-to img/icons/<name>.svg, and reports any icon in ArkhamDB's app.css whose glyph we
-do not have a name for. Only the standard library is used.
+Downloads the icon font + the class-symbol PNGs, reports any icon in ArkhamDB's
+app.css whose glyph we do not have a name for, and any name whose glyph the font
+no longer ships. Only the standard library is used.
+
+It no longer writes per-icon SVGs: those duplicated the symbols vendored under
+data/icons/, and the font is what the UI renders from.
 
 See docs/icons.md for the index this produces.
 """
@@ -173,16 +176,15 @@ def main():
     if spare:
         print("  NOTE: unnamed glyphs in the font: %s" % spare)
 
-    print("writing img/icons/ …")
+    # The per-icon SVGs this used to write to img/icons/ are gone. Every one of
+    # them duplicated a symbol already vendored under data/icons/, and one was
+    # actively wrong: the font maps .icon-wild and .icon-unique to the same
+    # character, so the extracted wild.svg was the unique star rather than the
+    # printed question mark. The font is still what the UI renders from, so the
+    # check that every name we claim still has a glyph stays.
     for name, ch in sorted(ICONS.items()):
         if ch not in glyphs:
             print("  MISSING glyph %r for %s" % (ch, name), file=sys.stderr)
-            continue
-        d, adv = glyphs[ch]
-        write(os.path.join(ROOT, "img", "icons", name + ".svg"),
-              '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%s" '
-              'fill="currentColor"><g transform="translate(0, %d) scale(1, -1)">'
-              '<path d="%s"/></g></svg>\n' % (view_box(d, adv), ASCENT, d))
 
     print("writing img/factions/ …")
     for f in FACTIONS:

@@ -19,7 +19,6 @@
     combat:       ['combat',       'combat',    'Combat'],
     strength:     ['combat',       'combat',    'Combat'],
     agility:      ['agility',      'agility',   'Agility'],
-    wild:         ['wild',         'wild',      'Wild'],
 
     guardian:     ['guardian',     'guardian',  'Guardian'],
     seeker:       ['seeker',       'seeker',    'Seeker'],
@@ -49,11 +48,16 @@
     per_investigator: ['per_investigator', '',  'Per investigator']
   };
 
-  /* No glyph in the font, but a standalone drawing exists in img/icons/ —
-     css/style.css masks the file and tints it, so these behave like glyphs. */
+  /* No usable glyph in the font, but a vendored symbol exists under
+     data/icons/ —      css/style.css masks the file and tints it, so these behave like glyphs. */
   var SVG_ICONS = {
     health: 'Health',
-    sanity: 'Sanity'
+    sanity: 'Sanity',
+    /* The font maps .icon-wild to the same character as .icon-unique, a star,
+       which is the unique marker and not the wild skill. The printed wild icon
+       is the question mark ArkhamDB's own app.css asks for and its font cannot
+       draw; Skill-Wild.svg is it. */
+    wild:   'Wild'
   };
 
   /* No glyph and no drawing, so these stay as small lettered tags. */

@@ -23,7 +23,7 @@ The one exception is the five class symbols. ArkhamDB draws those from 16×16 PN
 | Path | What |
 |---|---|
 | `fonts/arkham-icons.{woff,ttf,otf}` | the icon font, unmodified |
-| `img/icons/<name>.svg` | every glyph extracted to a standalone SVG (`fill="currentColor"`, 1024-unit em box), plus the two hand-added drawings below |
+| `data/icons/Chapter 01/00 - Core/` | the same symbols, vendored as black-on-transparent SVG |
 | `img/factions/<faction>.png` | ArkhamDB's own 16px class plates, as shipped (kept for reference — the UI uses the font) |
 | `css/arkham-icons.css` | `@font-face` + the `.icon-*` / `.color-*` classes |
 
@@ -36,19 +36,19 @@ ArkhamDB uses; aliases in parentheses.
 
 | Icon | Char | app.css class | SVG |
 |---|---|---|---|
-| Action | `i` | `.icon-action` | `img/icons/action.svg` |
-| Reaction | `!` | `.icon-reaction` | `img/icons/reaction.svg` |
-| Fast / free | `j` | `.icon-fast` (`.icon-free`, `.icon-lightning`) | `img/icons/fast.svg` |
+| Action | `i` | `.icon-action` | `data/icons/Chapter 01/00 - Core/Trigger-Action.svg` |
+| Reaction | `!` | `.icon-reaction` | `data/icons/Chapter 01/00 - Core/Trigger-Reaction.svg` |
+| Fast / free | `j` | `.icon-fast` (`.icon-free`, `.icon-lightning`) | `data/icons/Chapter 01/00 - Core/Trigger-Free.svg` |
 
 ### Skills
 
 | Icon | Char | app.css class | SVG |
 |---|---|---|---|
-| Willpower | `p` | `.icon-willpower` (`.icon-will`) | `img/icons/willpower.svg` |
-| Intellect | `b` | `.icon-intellect` (`.icon-lore`) | `img/icons/intellect.svg` |
-| Combat | `c` | `.icon-combat` (`.icon-strength`) | `img/icons/combat.svg` |
-| Agility | `a` | `.icon-agility` | `img/icons/agility.svg` |
-| Wild | `s` | `.icon-wild` | `img/icons/wild.svg` |
+| Willpower | `p` | `.icon-willpower` (`.icon-will`) | `data/icons/Chapter 01/00 - Core/Skill-Willpower.svg` |
+| Intellect | `b` | `.icon-intellect` (`.icon-lore`) | `data/icons/Chapter 01/00 - Core/Skill-Intellect.svg` |
+| Combat | `c` | `.icon-combat` (`.icon-strength`) | `data/icons/Chapter 01/00 - Core/Skill-Combat.svg` |
+| Agility | `a` | `.icon-agility` | `data/icons/Chapter 01/00 - Core/Skill-Agility.svg` |
+| Wild | `s` | `.icon-wild` | `data/icons/Chapter 01/00 - Core/Skill-Wild.svg` |
 
 **Wild is the one deliberate deviation from `app.css`.** Upstream sets
 `.icon-wild:before{content:"?"}` — a character the font has no glyph for, so ArkhamDB
@@ -65,11 +65,11 @@ core-set investigator cards `01001`–`01005`.
 
 | Icon | Char | Class here | Assets |
 |---|---|---|---|
-| Guardian (shield + star) | `f` | `.icon-guardian` | `img/icons/guardian.svg`, `img/factions/guardian.png` |
-| Seeker (globe) | `h` | `.icon-seeker` | `img/icons/seeker.svg`, `img/factions/seeker.png` |
-| Rogue (diamond + serpent) | `d` | `.icon-rogue` | `img/icons/rogue.svg`, `img/factions/rogue.png` |
-| Mystic (eye in triangle) | `g` | `.icon-mystic` | `img/icons/mystic.svg`, `img/factions/mystic.png` |
-| Survivor (bird) | `e` | `.icon-survivor` | `img/icons/survivor.svg`, `img/factions/survivor.png` |
+| Guardian (shield + star) | `f` | `.icon-guardian` | `data/icons/Chapter 01/00 - Core/Class-Guardian.svg`, `img/factions/guardian.png` |
+| Seeker (globe) | `h` | `.icon-seeker` | `data/icons/Chapter 01/00 - Core/Class-Seeker.svg`, `img/factions/seeker.png` |
+| Rogue (diamond + serpent) | `d` | `.icon-rogue` | `data/icons/Chapter 01/00 - Core/Class-Rogue.svg`, `img/factions/rogue.png` |
+| Mystic (eye in triangle) | `g` | `.icon-mystic` | `data/icons/Chapter 01/00 - Core/Class-Mystic.svg`, `img/factions/mystic.png` |
+| Survivor (bird) | `e` | `.icon-survivor` | `data/icons/Chapter 01/00 - Core/Class-Survivor.svg`, `img/factions/survivor.png` |
 
 Neutral and Mythos have neither a glyph nor a PNG; the UI falls back to a coloured dot.
 
@@ -77,26 +77,26 @@ Neutral and Mythos have neither a glyph nor a PNG; the UI falls back to a colour
 
 | Icon | Char | app.css class | SVG |
 |---|---|---|---|
-| Skull | `k` | `.icon-skull` | `img/icons/skull.svg` |
-| Cultist | `l` | `.icon-cultist` | `img/icons/cultist.svg` |
-| Tablet | `q` | `.icon-tablet` | `img/icons/tablet.svg` |
-| Elder Thing | `n` | `.icon-elder_thing` | `img/icons/elder_thing.svg` |
-| Elder Sign | `o` | `.icon-elder_sign` (`.icon-eldersign`) | `img/icons/elder_sign.svg` |
-| Auto-fail | `m` | `.icon-auto_fail` | `img/icons/auto_fail.svg` |
-| Bless | `v` | `.icon-bless` | `img/icons/bless.svg` |
-| Curse | `w` | `.icon-curse` | `img/icons/curse.svg` |
-| Frost | `x` | `.icon-frost` | `img/icons/frost.svg` |
-| Null | `t` | `.icon-null` | `img/icons/null.svg` |
+| Skull | `k` | `.icon-skull` | `data/icons/Chapter 01/00 - Core/Skull.svg` |
+| Cultist | `l` | `.icon-cultist` | `data/icons/Chapter 01/00 - Core/Token-Cultist.svg` |
+| Tablet | `q` | `.icon-tablet` | `data/icons/Chapter 01/00 - Core/Token-Tablet.svg` |
+| Elder Thing | `n` | `.icon-elder_thing` | `data/icons/Chapter 01/00 - Core/Token-Elder-Thing.svg` |
+| Elder Sign | `o` | `.icon-elder_sign` (`.icon-eldersign`) | `data/icons/Chapter 01/00 - Core/Token-Elder Sign.svg` |
+| Auto-fail | `m` | `.icon-auto_fail` | `data/icons/Chapter 01/00 - Core/Token-Autofail.svg` |
+| Bless | `v` | `.icon-bless` | `data/icons/Chapter 01/00 - Core/Token-Bless.svg` |
+| Curse | `w` | `.icon-curse` | `data/icons/Chapter 01/00 - Core/Token-Curse.svg` |
+| Frost | `x` | `.icon-frost` | `data/icons/Chapter 01/00 - Core/Token-Frost.svg` |
+| Null | `t` | `.icon-null` | `data/icons/Chapter 01/00 - Core/Dash.svg` |
 
 ### Seals (The Circle Undone)
 
 | Icon | Char | app.css class | SVG |
 |---|---|---|---|
-| Seal A | `1` | `.icon-seal_a` | `img/icons/seal_a.svg` |
-| Seal B | `2` | `.icon-seal_b` | `img/icons/seal_b.svg` |
-| Seal C | `3` | `.icon-seal_c` | `img/icons/seal_c.svg` |
-| Seal D | `4` | `.icon-seal_d` | `img/icons/seal_d.svg` |
-| Seal E | `5` | `.icon-seal_e` | `img/icons/seal_e.svg` |
+| Seal A | `1` | `.icon-seal_a` | `data/icons/Chapter 01/00 - Core/Seal-A.svg` |
+| Seal B | `2` | `.icon-seal_b` | `data/icons/Chapter 01/00 - Core/Seal-B.svg` |
+| Seal C | `3` | `.icon-seal_c` | `data/icons/Chapter 01/00 - Core/Seal-C.svg` |
+| Seal D | `4` | `.icon-seal_d` | `data/icons/Chapter 01/00 - Core/Seal-D.svg` |
+| Seal E | `5` | `.icon-seal_e` | `data/icons/Chapter 01/00 - Core/Seal-E.svg` |
 
 Upstream `app.css` has `.icon-seal_b:before{content:"=2"}` — a typo that prints a stray
 `=`. Fixed to `"2"` here.
@@ -105,8 +105,8 @@ Upstream `app.css` has `.icon-seal_b:before{content:"=2"}` — a typo that print
 
 | Icon | Char | app.css class | SVG |
 |---|---|---|---|
-| Unique | `s` | `.icon-unique` | `img/icons/unique.svg` |
-| Per investigator | `u` | `.icon-per_investigator` | `img/icons/per_investigator.svg` |
+| Unique | `s` | `.icon-unique` | `data/icons/Chapter 01/00 - Core/Unique.svg` |
+| Per investigator | `u` | `.icon-per_investigator` | `data/icons/Chapter 01/00 - Core/Investigator.svg` |
 
 Every glyph in the font is accounted for above — nothing is left unmapped.
 
@@ -119,8 +119,8 @@ as a CSS mask tinted with `currentColor` — the sources are solid black, not
 
 | Icon | class | SVG |
 |---|---|---|
-| Health | `.ah-svg.ah-svg-health` (`.color-health`) | `img/icons/health.svg` |
-| Sanity | `.ah-svg.ah-svg-sanity` (`.color-sanity`) | `img/icons/sanity.svg` |
+| Health | `.ah-svg.ah-svg-health` (`.color-health`) | `data/icons/Chapter 01/00 - Core/Health.svg` |
+| Sanity | `.ah-svg.ah-svg-sanity` (`.color-sanity`) | `data/icons/Chapter 01/00 - Core/Sanity.svg` |
 
 The mask classes live in `css/style.css`, not `css/arkham-icons.css`, which stays a
 mirror of upstream. `Markup.iconHtml('health', …)` and the `[health]` / `[sanity]` tokens
@@ -161,5 +161,7 @@ Card text coming back from the API keeps its `[token]` markup; `Markup.renderTex
 
 ## Regenerating
 
-`docs/regen-icons.py` re-downloads `app.css` and the font from ArkhamDB, re-extracts every
-glyph to `img/icons/`, and refreshes `fonts/` and `img/factions/`.
+`docs/regen-icons.py` re-downloads `app.css` and the font from ArkhamDB, refreshes `fonts/`
+and `img/factions/`, and reports any icon whose glyph has moved or gone. It no longer
+writes per-icon SVGs: the symbols are vendored under `data/icons/`, and the font is what
+the UI renders from.

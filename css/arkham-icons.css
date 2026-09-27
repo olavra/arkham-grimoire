@@ -7,7 +7,7 @@
    those from 16px PNGs instead, so their characters are not documented upstream;
    they were identified against the core-set investigator cards.
 
-   Standalone SVG copies of every glyph: img/icons/<name>.svg
+   The same symbols, vendored as SVG: data/icons/Chapter 01/00 - Core/
    Full index: docs/icons.md
    ========================================================================== */
 
@@ -37,10 +37,11 @@
 .icon-intellect:before,.icon-lore:before{content:"b"}
 .icon-combat:before,.icon-strength:before{content:"c"}
 .icon-agility:before{content:"a"}
-/* Deliberate deviation from app.css, which sets content:"?" — a character the font
-   has no glyph for, so ArkhamDB renders a literal question mark. The star is the
-   printed wild icon, and it is the only star the font ships (see .icon-unique). */
-.icon-wild:before{content:"s"}
+/* No .icon-wild here. app.css sets content:"?" for a character the font has no
+   glyph for; the printed icon IS that question mark, so it is drawn from
+   data/icons/.../Skill-Wild.svg instead — see .ah-svg-wild in style.css. The
+   star this used to borrow is the unique marker (see .icon-unique), a different
+   symbol that only ever prefixes a card title. */
 
 /* ---------- classes / factions ---------- */
 .icon-guardian:before{content:"f"}
