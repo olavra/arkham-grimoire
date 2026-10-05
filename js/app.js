@@ -186,7 +186,7 @@
   }
 
   /* The pack catalogue has sort and group menus of its own: the card orders
-     above mean nothing for packs. Oldest First is the catalogue as ArkhamDB
+     above mean nothing for packs. Newest First is the default; Oldest First is the catalogue as ArkhamDB
      ships it. */
   var HOME_SORTS = [
     { code: 'newest', label: 'Newest First' },
@@ -196,7 +196,7 @@
     { code: 'chapter', label: 'Chapter / Cycle' },
     { code: 'none', label: 'None' }
   ];
-  var homeView = { sort: 'oldest', group: 'chapter' };
+  var homeView = { sort: 'newest', group: 'chapter' };
 
   var state = {
     token: 0,        // invalidates in-flight renders when the route changes
@@ -2393,7 +2393,7 @@
 
   window.addEventListener('hashchange', route);
 
-  if (!location.hash) location.replace('#/');
+  if (!location.hash) location.replace(PACKS_HASH);
   buildLangPicker();
   syncHeadHeight();
   route();
