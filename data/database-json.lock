@@ -1,7 +1,7 @@
 {
   "branch": "master",
-  "commit": "178f1fde264b0b03b78622c7a380eb87c7c88ca1",
-  "fetched": "2026-09-27T22:21:08Z",
+  "commit": "4ac7e1640dd75862b5e29bb6f9b604dc2e555355",
+  "fetched": "2026-10-05T02:41:32Z",
   "remote": "https://github.com/Kamalisk/arkhamdb-json-data.git",
-  "subject": "Fixed the_lost_sister typo (#1792)"
+  "subject": "German translation for The Drowned City campaign cards (#1812)"
 }
