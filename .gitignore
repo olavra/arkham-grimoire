@@ -29,7 +29,10 @@ data/pack-art-source/
 # Local mirror of the ArkhamDB card scans, filled by docs/fetch-cardart.py:
 # ~7600 files, ~850 MB, re-downloadable at any time. The manifest is what makes
 # a re-run incremental, so it stays with the images rather than in the repo.
-data/card-art/
+data/card-art/*
+# ...except the manifest (2 MB): build-data.py derives every imagesrc from it,
+# so a build with no local mirror (Vercel) still needs it.
+!data/card-art/manifest.json
 
 # Upstream card data, cloned by scripts/fetch-data.py. Generated and never
 # edited: our changes live in data/overlay/. The commit used is recorded in
