@@ -31,11 +31,32 @@ js/viewer.js          3D card preview overlay
 js/app.js             hash router and the three views
 fonts/                arkham-icons.{woff,ttf,otf}
 img/                  player.png / encounter.png — the two generic card backs
-img/icons/            every icon glyph as a standalone SVG, plus health/sanity
 img/factions/         ArkhamDB's 16px class plates (reference)
 docs/icons.md         the icon index
 docs/regen-icons.py   re-pulls the icon assets from ArkhamDB
+
+data/                 everything the card database is built from and with
+data/database-json/   upstream card data, cloned (generated, gitignored)
+data/database-overlay/ our corrections and our own packs
+data/database-json.lock    the upstream commit the build used
+data/card-art/        mirror of every card scan (generated, gitignored, ~860 MB)
+data/card-art-extra/  hand-added scans for cards ArkhamDB has no art for
+data/icons/           every game symbol: expansions, encounter sets, tokens, skills
+data/pack-box-art/    the printed box art for each pack, served
+data/pack-art/        pack tiles, generated from the sources below, served
+data/pack-art-source/ full-size pack art (gitignored; feeds regen-packart.py)
+db/                   the built card database the app fetches (generated)
+
+scripts/fetch-data.py   clone or update upstream, write the lockfile
+scripts/build-data.py   upstream + overlay + rules -> db/
+docs/fetch-cardart.py   mirror the card scans into data/card-art/
 ```
+
+`data/icons/` is every game symbol in one tree: the expansion and encounter-set
+marks, and — under `Chapter 01/00 - Core/` — the skill, token and trigger icons
+that also exist as glyphs in the icon font. The font is what renders card text;
+the SVGs are the reference, and the three symbols the font cannot draw
+(health, sanity, wild) are painted from them as CSS masks.
 
 ## Filtering a pack
 
@@ -138,7 +159,7 @@ symbols (guardian/seeker/rogue/mystic/survivor) come from the same font. Tokens 
 glyph — `[mythos]`, `[neutral]` and anything a future set introduces — degrade to a readable
 tag rather than leaking raw `[brackets]` into the text.
 
-Every glyph is also extracted to a standalone SVG in `img/icons/`. **[docs/icons.md](docs/icons.md)
+Every glyph is also vendored as an SVG under `data/icons/`. **[docs/icons.md](docs/icons.md)
 is the full index** — name, character, class, and where each icon is used. Run
 `python docs/regen-icons.py` to re-pull everything from ArkhamDB.
 

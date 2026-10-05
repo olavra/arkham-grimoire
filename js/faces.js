@@ -61,11 +61,11 @@
 
   /* 218 cards in the pool have no scan on ArkhamDB, and the ones it does hold
      occasionally answer 500. Both are covered by a hand-added file at
-     img/cards/<code>.png. Nothing can say in advance whether that file is there,
+     data/card-art-extra/<code>.png. Nothing can say in advance whether that file is there,
      so the URL is always offered as the next candidate and the miss is caught
      where the face is drawn — which makes dropping a PNG into the folder the
      whole of adding a card's art, with no list to keep in step. */
-  var LOCAL = 'img/cards/';
+  var LOCAL = 'data/card-art-extra/';
 
   function localArt(code) { return code ? LOCAL + code + '.png' : null; }
 

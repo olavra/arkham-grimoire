@@ -1,20 +1,20 @@
 /* Pack cover art.
 
    ArkhamDB has no field for the FFG SKU (AHC##), and most cover files in
-   img/packs/ are named after it, so the link between an ArkhamDB pack code
+   data/pack-box-art/ are named after it, so the link between an ArkhamDB pack code
    and its cover has to live here. Both maps below are keyed by ArkhamDB
    pack `code`.
 
    Most entries were matched on pack name; the ones name-matching cannot
-   reach are noted inline. To add a cover: drop the PNG in img/packs/ under
+   reach are noted inline. To add a cover: drop the PNG in data/pack-box-art/ under
    its FFG name and add a row to COVERS, or — for a pack FFG never gave a
    SKU — name it after the pack code and add a row to CODE_COVERS. */
 (function (global) {
   'use strict';
 
-  var DIR = 'img/packs/';
+  var DIR = 'data/pack-box-art/';
 
-  /* pack code -> [FFG code, file name in img/packs/] */
+  /* pack code -> [FFG code, file name in data/pack-box-art/] */
   var COVERS = {
     'core': ['AHC01', 'AHC01 - Arkham Horror - The Card Game.png'],                 // AHC01 predates the "Core Set" rename
     'rcore': ['AHC60', 'AHC60 - Revised Core Set.png'],
@@ -148,7 +148,7 @@
      investigator side stories, Books) fall through to url() returning
      null. */
 
-  /* 'img/packs/AHC01%20-%20….png', or null when the pack has no art. */
+  /* 'data/pack-box-art/AHC01%20-%20….png', or null when the pack has no art. */
   function url(packCode) {
     var row = COVERS[packCode];
     if (row) return DIR + encodeURIComponent(row[1]);

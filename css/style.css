@@ -70,7 +70,7 @@
   --f-neutral:#9ba3b4;
   --f-mythos:#c9b8a0;
 
-  /* health / sanity — no glyph in the icon font, drawn from img/icons/ */
+  /* health / sanity — no glyph in the icon font, drawn from data/icons/ */
   --st-health:#e0575f;
   --st-sanity:#6ea8ff;
 
@@ -1309,9 +1309,12 @@ a{color:inherit;text-decoration:none}
   color:var(--brass);letter-spacing:.06em;white-space:nowrap;text-shadow:none;
 }
 
-/* Health and sanity have no glyph in the font, so they come from the standalone
-   files in img/icons/. Those are solid black, so they are painted as a mask and
-   tinted with currentColor rather than dropped in as an <img>. */
+/* Health, sanity and wild have no usable glyph in the icon font, so they come
+   from the vendored symbols under data/icons/. Those are solid black, so they
+   are painted as a mask and tinted with currentColor rather than dropped in as
+   an <img>. Wild is here because ArkhamDB's own .icon-wild is content:"?" for a
+   character the font has no glyph for; the printed icon is that question mark,
+   and Skill-Wild.svg is it drawn properly. */
 .ah-svg{
   display:inline-block;width:1em;height:1em;flex-shrink:0;
   background-color:currentColor;text-shadow:none;
@@ -1321,12 +1324,16 @@ a{color:inherit;text-decoration:none}
   -webkit-mask-size:contain;mask-size:contain;
 }
 .ah-svg-health{
-  -webkit-mask-image:url('../img/icons/health.svg');
-  mask-image:url('../img/icons/health.svg');
+  -webkit-mask-image:url('../data/icons/Chapter%2001/00%20-%20Core/Health.svg');
+  mask-image:url('../data/icons/Chapter%2001/00%20-%20Core/Health.svg');
 }
 .ah-svg-sanity{
-  -webkit-mask-image:url('../img/icons/sanity.svg');
-  mask-image:url('../img/icons/sanity.svg');
+  -webkit-mask-image:url('../data/icons/Chapter%2001/00%20-%20Core/Sanity.svg');
+  mask-image:url('../data/icons/Chapter%2001/00%20-%20Core/Sanity.svg');
+}
+.ah-svg-wild{
+  -webkit-mask-image:url('../data/icons/Chapter%2001/00%20-%20Core/Skill-Wild.svg');
+  mask-image:url('../data/icons/Chapter%2001/00%20-%20Core/Skill-Wild.svg');
 }
 .color-health{color:var(--st-health)}
 .color-sanity{color:var(--st-sanity)}

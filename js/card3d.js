@@ -80,7 +80,7 @@
     return '<div class="c3d-face c3d-back c3d-blank">' + blankInner(name) + '</div>';
   }
 
-  /* Whether img/cards/<code>.png exists is only knowable by asking for it, so
+  /* Whether data/card-art-extra/<code>.png exists is only knowable by asking for it, so
      faces are drawn optimistically: a failed image steps to its next candidate,
      and one that has run out becomes the blank panel rather than a browser's
      broken-image glyph. `error` doesn't bubble either, hence the capture-phase

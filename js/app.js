@@ -1631,7 +1631,7 @@
   }
 
   /* stat kinds Markup can draw an icon for — font glyphs, plus health and
-     sanity from img/icons/ */
+     sanity from data/icons/ */
   var STAT_ICONS = {
     willpower: 'willpower', intellect: 'intellect',
     combat: 'combat', agility: 'agility',
@@ -1967,9 +1967,9 @@
       metaCell('On ArkhamDB',
         '<a href="' + esc(card.url || (API.origin + '/card/' + card.code)) +
         '" target="_blank" rel="noopener">' + esc(card.code) + ' ↗</a>') +
-      metaCell('API endpoint',
+      metaCell('Data source',
         '<a href="' + esc(API.cardUrl(card.code)) +
-        '" target="_blank" rel="noopener">/card/' + esc(card.code) + ' ↗</a>');
+        '" target="_blank" rel="noopener">' + esc(API.cardUrl(card.code)) + ' ↗</a>');
 
     var flags = [];
     if (card.is_unique) flags.push('Unique');

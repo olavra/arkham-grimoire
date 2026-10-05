@@ -1,9 +1,9 @@
 /* Expansion symbols.
 
-   The SVGs in img/game_icons/ are named after the printed expansion symbol,
+   The SVGs in data/icons/ are named after the printed expansion symbol,
    which is not what ArkhamDB calls the pack or the encounter set, so the two
    sides are matched here. The mapping itself is kept as a table in
-   img/game_icons/game_icons_map.csv, and this file is generated from it: to
+   data/icons/game_icons_map.csv, and this file is generated from it: to
    change an assignment, edit that CSV and regenerate.
 
    PACKS is keyed by ArkhamDB pack `code` and holds the symbol of the box the
@@ -13,9 +13,9 @@
 (function (global) {
   'use strict';
 
-  var DIR = 'img/game_icons/';
+  var DIR = 'data/icons/';
 
-  /* pack code -> file under img/game_icons/ */
+  /* pack code -> file under data/icons/ */
   var PACKS = {
     'and':         "Chapter 02/202 - Investigator Decks/Andr\u00e9-Patel.svg",
     'aof':         "Chapter 01/00 - Core/Parallel-Investigator.svg",
@@ -31,6 +31,7 @@
     'bsr':         "Chapter 01/03 - The Path to Carcosa/PTC-Black-Stars-Rise.svg",
     'btb':         "Chapter 01/Investigators/Parallel Investigators/By-the-Book.svg",
     'car':         "Chapter 02/202 - Investigator Decks/Carolyn-Fern.svg",
+    'cob':         "Chapter 02/203 - Children of Blood/COB-Campaign.svg",
     'coh':         "Chapter 01/Scenarios/02 - Carnevale of Horrors/COH-Expansion.svg",
     'core':        "Chapter 01/00 - Core/Core-Set.svg",
     'core_2026':   "Chapter 02/200 - Core 2026/Core 2026.svg",
@@ -133,7 +134,7 @@
     'wos':         "Chapter 01/05 - The Circle Undone/TCU-The-Wages-of-Sin.svg"
   };
 
-  /* encounter set code -> file under img/game_icons/ */
+  /* encounter set code -> file under data/icons/ */
   var SETS = {
     'a_light_in_the_fog':                             "Chapter 01/07 - The Innsmouth Conspiracy/TIC-A-Light-in-the-Fog.svg",
     'a_phantom_of_truth':                             "Chapter 01/03 - The Path to Carcosa/PTC-A-Phantom-of-Truth.svg",
@@ -141,6 +142,7 @@
     'abominable_contessa':                            "Chapter 01/Scenarios/13 - Film Fatale/FF-Abominable-Contessa.svg",
     'abyssal_gifts':                                  "Chapter 01/Scenarios/04 - Guardians of the Abyss/GOTA-Abyssal-Gifts.svg",
     'abyssal_tribute':                                "Chapter 01/Scenarios/04 - Guardians of the Abyss/GOTA-Abyssal-Tribute.svg",
+    'afflicted':                                      "Chapter 02/203 - Children of Blood/COB-Afflicted.svg",
     'agents_of_atlach_nacha':                         "Chapter 01/06 - The Dream-Eaters/TDE-Agents-of-Atlach-Nacha.svg",
     'agents_of_azathoth':                             "Chapter 01/05 - The Circle Undone/TCU-Agents-of-Azathoth.svg",
     'agents_of_cthulhu':                              "Chapter 01/01 - Night of the Zealot/NOTZ-Agents-of-Cthulhu.svg",
@@ -155,6 +157,7 @@
     'agents_of_yig':                                  "Chapter 01/04 - The Forgotten Age/TFA-Agents-of-Yig.svg",
     'agents_of_yog':                                  "Chapter 01/01 - Night of the Zealot/NOTZ-Agents-of-Yog-Sothoth.svg",
     'agents_of_yuggoth':                              "Chapter 01/09 - The Skarlet Keys/TSKC-Agents-of-Yuggoth.svg",
+    'agents_of_zburamoarte':                          "Chapter 02/203 - Children of Blood/COB-Agents-of-Zburamoarte.svg",
     'alien_interference':                             "Chapter 01/Scenarios/05 - Murder at the Excelsior Hotel/MATEH-Alien-Interference.svg",
     'alien_machinery':                                "Chapter 01/11 - The Drowned City/TDCC-Alien-Machinery.svg",
     'all_or_nothing':                                 "Chapter 01/Investigators/Parallel Investigators/All-or-Nothing.svg",
@@ -183,12 +186,17 @@
     'blob_epic_multiplayer':                          "Chapter 01/00 - Core/Epic-Multiplayer.svg",
     'blob_single_group':                              "Chapter 01/00 - Core/Single-Group.svg",
     'blob_that_ate_everything_else':                  "Chapter 01/Scenarios/11 - The Blob that ate everything else!/TBTAEE-he-Blob-That-Ate-Everything-Else.svg",
+    'blood_blight':                                   "Chapter 02/203 - Children of Blood/COB-Blood-Blight.svg",
+    'blood_money':                                    "Chapter 02/203 - Children of Blood/COB-Blood-Money.svg",
+    'blood_moon':                                     "Chapter 02/203 - Children of Blood/COB-Blood-Moon.svg",
     'blood_on_the_altar':                             "Chapter 01/02 - The Dunwich Legacy/DWL-Blood-on-the-Altar.svg",
+    'bloodthirst':                                    "Chapter 02/203 - Children of Blood/COB-Bloodthirst.svg",
     'bloodthirsty_spirits':                           "Chapter 01/05r - Return to The Circle Undone/RTTCU-Bloodthirsty-Spirits.svg",
     'brotherhood_of_the_beast':                       "Chapter 01/Scenarios/04 - Guardians of the Abyss/GOTA-Brotherhood-of-the-Beast.svg",
     'by_the_book':                                    "Chapter 01/Investigators/Parallel Investigators/By-the-Book.svg",
     'byakhee':                                        "Chapter 01/03 - The Path to Carcosa/PTC-Byakhee.svg",
     'bystanders':                                     "Chapter 02/201 - Brethren of Ash/BOA-Bystanders.svg",
+    'children_of_blood':                              "Chapter 02/203 - Children of Blood/COB-Children-of-Blood.svg",
     'children_of_paradise':                           "Chapter 01/Scenarios/07 - War of the Outer Worlds/WOTOG-Children-of-Paradise.svg",
     'chilling_cold':                                  "Chapter 01/01 - Night of the Zealot/NOTZ-Chilling-Cold.svg",
     'chilling_mists':                                 "Chapter 01/05r - Return to The Circle Undone/RTTCU-Chilling-Mists.svg",
@@ -268,6 +276,7 @@
     'forgotten_island':                               "Chapter 01/Scenarios/13 - Film Fatale/FF-Forgotten-Island.svg",
     'fortune_and_folly':                              "Chapter 01/Scenarios/09 - Fortune and Folly/FAF-Fortune-and-Folly.svg",
     'fortunes_chosen':                                "Chapter 01/Scenarios/09 - Fortune and Folly/FAF-Fortune\u2019s-Chosen.svg",
+    'friends_in_low_places':                          "Chapter 02/203 - Children of Blood/COB-Friends-in-Low-Places.svg",
     'gangs_of_arkham':                                "Chapter 02/201 - Brethren of Ash/BOA-Gangs-of-Arkham.svg",
     'ghouls':                                         "Chapter 01/01 - Night of the Zealot/NOTZ-Ghouls.svg",
     'ghouls_of_umôrdhoth':                            "Chapter 01/01r - Return to The Night of the Zealot/RTNOTZ-Ghouls-of-Um\u00f4rdhoth.svg",
@@ -285,12 +294,14 @@
     'hideous_abominations':                           "Chapter 01/02 - The Dunwich Legacy/DWL-Hideous-Abominations.svg",
     'horror_in_high_gear':                            "Chapter 01/07 - The Innsmouth Conspiracy/TIC-Horror-in-High-Gear.svg",
     'horrors_in_the_rock':                            "Chapter 01/10 - The Feast of Hemlock Vale/FHVC-Horrors-in-the-Rock.svg",
+    'hunted':                                         "Chapter 02/203 - Children of Blood/COB-Hunted.svg",
     'ice_and_death':                                  "Chapter 01/08 - Edge of the Earth/EOEC-Ice-and-Death.svg",
     'impending_evils':                                "Chapter 01/05r - Return to The Circle Undone/RTTCU-Impending-Evils.svg",
     'in_the_clutches_of_chaos':                       "Chapter 01/05 - The Circle Undone/TCU-In-the-Clutches-of-Chaos.svg",
     'in_the_labyrinths_of_lunacy':                    "Chapter 01/Scenarios/03 - The Labyrinths of Lunacy/TLOL-The-Labyrinths-of-Lunacy.svg",
     'in_too_deep':                                    "Chapter 01/07 - The Innsmouth Conspiracy/TIC-In-Too-Deep.svg",
     'inexorable_fate':                                "Chapter 01/05 - The Circle Undone/TCU-Inexorable-Fate.svg",
+    'infected':                                       "Chapter 02/203 - Children of Blood/COB-Infected.svg",
     'inhabitants_of_carcosa':                         "Chapter 01/03 - The Path to Carcosa/PTC-Inhabitants-of-Carcosa.svg",
     'into_the_maelstrom':                             "Chapter 01/07 - The Innsmouth Conspiracy/TIC-Into-the-Maelstrom.svg",
     'knyan':                                          "Chapter 01/04 - The Forgotten Age/TFA-K\u2019n-yan.svg",
@@ -310,7 +321,9 @@
     'miasma':                                         "Chapter 01/08 - Edge of the Earth/EOEC-Miasma.svg",
     'migo_incursion':                                 "Chapter 01/Scenarios/06 - The Blob that Ate Everything/TBTAE-Mi-Go-Incursion.svg",
     'migo_incursion_2':                               "Chapter 01/Scenarios/11 - The Blob that ate everything else!/TBTAEE-Mi-Go-Incursion-II.svg",
+    'misinformation':                                 "Chapter 02/203 - Children of Blood/COB-Misinformation.svg",
     'miskatonic_university':                          "Chapter 02/201 - Brethren of Ash/BOA-Miskatonic-University.svg",
+    'mongrels':                                       "Chapter 02/203 - Children of Blood/COB-Mongrels.svg",
     'murder_at_the_excelsior_hotel':                  "Chapter 01/Scenarios/05 - Murder at the Excelsior Hotel/MATEH-Murder-at-the-Excelsior-Hotel.svg",
     'music_of_the_damned':                            "Chapter 01/05 - The Circle Undone/TCU-Music-of-the-Damned.svg",
     'mutations':                                      "Chapter 01/10 - The Feast of Hemlock Vale/FHVC-Mutations.svg",
@@ -319,6 +332,7 @@
     'nameless_horrors':                               "Chapter 01/08 - Edge of the Earth/EOEC-Nameless-Horrors.svg",
     'naomis_crew':                                    "Chapter 01/02 - The Dunwich Legacy/DWL-Naomi\u2019s-Crew.svg",
     'neurotic_fear':                                  "Chapter 01/03r - Return to The Path to Carcosa/RTPTC-Neurotic-Fear.svg",
+    'new_horizons':                                   "Chapter 02/203 - Children of Blood/COB-New-Horizons.svg",
     'nightgaunts':                                    "Chapter 01/01 - Night of the Zealot/NOTZ-Nightgaunts.svg",
     'obsidian_canyons':                               "Chapter 01/11 - The Drowned City/TDCC-Obsidian-Canyons.svg",
     'on_thin_ice':                                    "Chapter 01/09 - The Skarlet Keys/TSKC-On-Thin-Ice.svg",
@@ -333,6 +347,7 @@
     'pnakotic_brotherhood':                           "Chapter 01/04 - The Forgotten Age/TFA-Pnakotic-Brotherhood.svg",
     'point_of_no_return':                             "Chapter 01/06 - The Dream-Eaters/TDE-Point-of-No-Return.svg",
     'poison':                                         "Chapter 01/04 - The Forgotten Age/TFA-Poison.svg",
+    'preyed_upon':                                    "Chapter 02/203 - Children of Blood/COB-Preyed-Upon.svg",
     'queen_of_ash':                                   "Chapter 02/201 - Brethren of Ash/BOA-Queen-of-Ash.svg",
     'rainforest':                                     "Chapter 01/04 - The Forgotten Age/TFA-Rainforest.svg",
     'rats':                                           "Chapter 01/01 - Night of the Zealot/NOTZ-Rats.svg",
@@ -387,10 +402,12 @@
     'return_to_where_doom_awaits':                    "Chapter 01/02r - Return to Dunwich Legacy/RTDWL-Return-to-Where-Doom-Awaits.svg",
     'riddles_and_rain':                               "Chapter 01/09 - The Skarlet Keys/TSKC-Riddles-and-Rain.svg",
     'rising_tide':                                    "Chapter 01/07 - The Innsmouth Conspiracy/TIC-Rising-Tide.svg",
+    'river_of_blood':                                 "Chapter 02/203 - Children of Blood/COB-River-of-Blood.svg",
     'rlyeh':                                          "Chapter 01/11 - The Drowned City/TDCC-R\u2019lyeh.svg",
     'rougarou':                                       "Chapter 01/Scenarios/01 - Curse of the Rougarou/COTR-Curse-of-the-Rougarou.svg",
     'ruins':                                          "Chapter 01/04 - The Forgotten Age/TFA-Forgotten-Ruins.svg",
     'sands_of_egypt':                                 "Chapter 01/Scenarios/04 - Guardians of the Abyss/GOTA-Sands-of-Egypt.svg",
+    'sanguine_secrets':                               "Chapter 02/203 - Children of Blood/COB-Sanguine-Secrets.svg",
     'sanguine_shadows':                               "Chapter 01/09 - The Skarlet Keys/TSKC-Sanguine-Shadows.svg",
     'scarlet_sorcery':                                "Chapter 01/09 - The Skarlet Keys/TSKC-Scarlet-Sorcery.svg",
     'secret_doors':                                   "Chapter 01/02r - Return to Dunwich Legacy/RTDWL-Secret-Doors.svg",
@@ -415,6 +432,7 @@
     'spiders':                                        "Chapter 01/06 - The Dream-Eaters/TDE-Spiders.svg",
     'spreading_corruption':                           "Chapter 01/09 - The Skarlet Keys/TSKC-Spreading-Corruption.svg",
     'spreading_flames':                               "Chapter 02/201 - Brethren of Ash/BOA-Spreading-Flames.svg",
+    'stalked':                                        "Chapter 02/203 - Children of Blood/COB-Stalked.svg",
     'star_spawn':                                     "Chapter 01/11 - The Drowned City/TDCC-Star-Spawn.svg",
     'stirring_in_the_deep':                           "Chapter 01/08 - Edge of the Earth/EOEC-Stirring-in-the-Deep.svg",
     'stowaways':                                      "Chapter 01/11 - The Drowned City/TDCC-Stowaways.svg",
@@ -486,6 +504,7 @@
     'venice':                                         "Chapter 01/Scenarios/02 - Carnevale of Horrors/COH-Carnevale-of-Horrors.svg",
     'venom':                                          "Chapter 01/04 - The Forgotten Age/TFA-Yig\u2019s-Venom.svg",
     'venomous_hate':                                  "Chapter 01/04r - Return to The Forgotten Age/RTTFA-Venomous-Hate.svg",
+    'vermin':                                         "Chapter 02/203 - Children of Blood/COB-Vermin.svg",
     'vile_experiments':                               "Chapter 01/Scenarios/05 - Murder at the Excelsior Hotel/MATEH-Vile-Experiments.svg",
     'vortex':                                         "Chapter 01/03 - The Path to Carcosa/PTC-The-Vortex-Above.svg",
     'waking_nightmare':                               "Chapter 01/06 - The Dream-Eaters/TDE-Waking-Nightmare.svg",
